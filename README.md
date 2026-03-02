@@ -1,3 +1,3 @@
-# arbitrac
+# ArbiTrac
 
-A new Flutter project.
+Arbitrage betting tracker
