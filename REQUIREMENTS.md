@@ -27,7 +27,7 @@ status).
 
 ### Phase 1: Project Setup and Core Infrastructure
 
-[ ] __Step 1.1: Dependecies and Theme__
+- [ ] __Step 1.1: Dependecies and Theme__
 
     - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to pubspec.yaml
 
