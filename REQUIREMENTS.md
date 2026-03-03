@@ -29,7 +29,7 @@ status).
 
 - [ ] __Step 1.1: Dependecies and Theme__
 
-    - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to pubspec.yaml
+    - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to <span style="color: green;"> pubspec.yaml</span>
 
     - Create a centralized 
 
