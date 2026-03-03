@@ -29,5 +29,6 @@ status).
 
 [ ] __Step 1.1: Dependecies and Theme__
     - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to pubspec.yaml
+    
     - Create a centralized <font color="green"> Theme </font>
 
