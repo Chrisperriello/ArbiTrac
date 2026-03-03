@@ -112,10 +112,10 @@ status).
             - Net Profit
             
 - [ ] __Step 2.4: Watchlist or Favorites__:
-        - Allow the user to pin a game they are looking at so they do not lose it if the screen updates 
-        - This should use the shared prefrence to save the users favorited sports/games so they do not refilter when the dashboard refreshes
+    - Allow the user to pin a game they are looking at so they do not lose it if the screen updates 
+    - This should use the shared prefrence to save the users favorited sports/games so they do not refilter when the dashboard refreshes
 - [ ] __Step 2.5: Search__:
-        - Allow for a mag-glass icon to pull up a blurred text box (SearchDelegate) to search for games in the list of all games that are displayed
+    - Allow for a mag-glass icon to pull up a blurred text box (SearchDelegate) to search for games in the list of all games that are displayed
     
 ### Phase 3: App Functionality and Intergration
 
