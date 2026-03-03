@@ -29,7 +29,27 @@ status).
 
 - [ ] __Step 1.1: Dependecies and Theme__
 
-    - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to <span style="color: green;"> pubspec.yaml</span>
+    - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to pubspec.yaml
 
-    - Create a centralized 
+    - Create a centralized ThemeData class in lib/theme.dart (colors, typography)
+
+- [ ] __Step 1.2: Base Architecture__
+    
+    - Set up the folder structure (models, screens, widgets, services, providers).
+
+    - Wrap MyApp in a ProviderScope
+
+- [ ] __Step 1.3: Security and Config__
+
+    - Create a .env file for API keys and a Config 
+    
+    - Set up flutter_secure_storage for sensitive user tokens
+
+- [ ] __Step 1.4: Math Utility
+
+    - Create lib/core/utils/arb_engine.dart
+    
+    - Write a static function that impments the sum(1 / sigma~i) < 1 logic using the Decimal package
+
+
 
