@@ -18,7 +18,7 @@ Gemini: When reading this file to implement a step, you MUST adhere to the follo
 3. __Local Storage__: Use shared_preferences for local app state (e.g., theme toggles, onboarding
 status).
 4. __Database__: Use Firebase Firestore for persistent cloud data.
-5. __tepwise Execution__ : Only implement the specific step requested in the prompt. Do not jump ahead.
+5. __Stepwise Execution__ : Only implement the specific step requested in the prompt. Do not jump ahead.
 
 
 ---
@@ -28,7 +28,8 @@ status).
 ### Phase 1: Project Setup and Core Infrastructure
 
 [ ] __Step 1.1: Dependecies and Theme__
+
     - Add Riverpod, Firebase Core, Firebase Auth, Cloud Firestor, and Shared Preferences to pubspec.yaml
-    
-    - Create a centralized <font color="green"> Theme </font>
+
+    - Create a centralized 
 
