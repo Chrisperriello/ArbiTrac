@@ -104,12 +104,12 @@ status).
         - Freshness indicator: a small timer or pulse icon showing how many seconds ago the odds were updated 
         - Remember that this is mocking so we can use mock data for now
 - [ ] __Step 2.3 Manual Arb Calculator__:
-        - *Input*: Tow or three text fields for "Odds" from different books
-        - Field for "Total Investment": Allow the user to input $100, $300, ect.
-        - *Output*: Use the engine to display the "Arbitrage %" and the "Required Stakes" to break even/profit based on a total $ amount
-        - Also display:
-            - Stake breakdown: "Bet $X on Bookie A, $Y on Bookie B."
-            - Net Profit
+    - *Input*: Tow or three text fields for "Odds" from different books
+    - Field for "Total Investment": Allow the user to input $100, $300, ect.
+    - *Output*: Use the engine to display the "Arbitrage %" and the "Required Stakes" to break even/profit based on a total $ amount
+    - Also display:
+        - Stake breakdown: "Bet $X on Bookie A, $Y on Bookie B."
+        - Net Profit
             
 - [ ] __Step 2.4 Watchlist or Favorites__:
     - Allow the user to pin a game they are looking at so they do not lose it if the screen updates 
