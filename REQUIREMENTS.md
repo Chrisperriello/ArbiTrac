@@ -33,13 +33,13 @@ status).
 
     - Create a centralized ThemeData class in lib/theme.dart (colors, typography)
 
-- [ ] __Step 1.2: Base Architecture__
+- [x] __Step 1.2: Base Architecture__
     
     - Set up the folder structure (models, screens, widgets, services, providers).
 
     - Wrap MyApp in a ProviderScope
 
-- [ ] __Step 1.3: Security and Config__
+- [x] __Step 1.3: Security and Config__
 
     - Create a .env file for API keys and a Config 
     
