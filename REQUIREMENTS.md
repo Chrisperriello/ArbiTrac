@@ -45,7 +45,7 @@ status).
     
     - Set up flutter_secure_storage for sensitive user tokens
 
-- [ ] __Step 1.4: Math Utility__
+- [x] __Step 1.4: Math Utility__
 
     - Create lib/core/utils/arb_engine.dart
     
@@ -55,12 +55,13 @@ status).
 
     - Indivdual Stakes (Si): Si = (Total Investment / (Arbitrage Percentage) * Sigma_i)
 
-- [ ] __Step 1.5: Scraper/API__
+- [x] __Step 1.5: Scraper/API__
     - Create the /lib/services/odds_api_service.dart
     - This will handle all of the heavy lifitng for getting the data 
     - For testing purposes limit api use which means:
         - Use Mock data until the full integration of the math and the use of the API pulling system until really necessary 
         - Use a simple local chaching mechanism (Shared_preferences) SO that everytime you host-restart the app during UI dev, you aren't burning tokens
+    - Added conversion support for American odds (`+/-`) into normalized decimal odds (`decimal_price`) in `odds_api_service.dart`
 
 ### Phase 2: The "Minimum Viable Product" (MVP)
 
