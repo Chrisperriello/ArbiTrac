@@ -75,7 +75,7 @@ status).
     - total (over/under) odds
     - outrighs(futures) odds
 
-- [ ] __Step 2.1: Main Screen__
+- [x] __Step 2.1: Main Screen__
     - Develop the main screen for the application
 
     - We will use tradtional flutter framework to create a place that displays the following:
@@ -83,12 +83,12 @@ status).
         - A sign up button for new users
     - Phase 3 will implment thesee but we need to create the screens for them 
 
-    - [ ] __Step 2.1.1: Login__
+    - [x] __Step 2.1.1: Login__
         - Using a form,  allow for a place to add in the Username
         - Using a form, allow for a place to add password
         - Then an elevated button to allow us to start the login
         - Allow for a icon button in the top left for us to go back to the main screen
-    - [ ] __Step 2.1.2: Sign up__
+    - [x] __Step 2.1.2: Sign up__
         - Using a form display,  allow for aplace to add in the Username
         - Using a form display, allow for a place to add password
         - Then an elevated button to allow us to start the login
