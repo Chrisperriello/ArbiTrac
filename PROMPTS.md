@@ -45,3 +45,12 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 
 - Read STARTUP.md and do what it says
 - Read step 1.5, then read mock.md and then do step 1.5
+
+3/9
+
+- Explain bottleneck issues in arb_engine.dart
+- Can we unify everything to use Decimal 
+
+3/10
+
+-  Lets do Step 2.1 in requirements

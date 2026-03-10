@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/config/app_config.dart';
+import 'screens/screens.dart';
 import 'theme.dart';
 
 Future<void> main() async {
@@ -16,11 +17,12 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: AppTheme.lightTheme,
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+      initialRoute: MainScreen.routeName,
+      routes: {
+        MainScreen.routeName: (_) => const MainScreen(),
+        LoginScreen.routeName: (_) => const LoginScreen(),
+        SignUpScreen.routeName: (_) => const SignUpScreen(),
+      },
     );
   }
 }
