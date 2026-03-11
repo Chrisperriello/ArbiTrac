@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'dashboard_screen.dart';
+
 
 //Stateful widget class
 class LoginScreen extends StatefulWidget {
@@ -31,10 +33,11 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Login flow will be connected in Phase 3.')),
+    Navigator.of(context).pushNamed(
+      DashboardScreen.routeName, //Send to Dashboard Screen
+      arguments: _usernameController.text.trim(),
     );
-  } 
+  }
 
 
 

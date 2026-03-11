@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'dashboard_screen.dart';
+
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
@@ -35,10 +37,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
       return;
     }
     FocusScope.of(context).unfocus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Sign up flow will be connected in Phase 3.'),
-      ),
+    Navigator.of(context).pushNamed(
+      DashboardScreen.routeName, // Send to Dashboard Screen
+      arguments: _usernameController.text.trim(),
     );
   }
 

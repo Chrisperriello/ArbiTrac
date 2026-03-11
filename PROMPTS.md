@@ -62,4 +62,5 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 - Review the arb_opportunity.dart and step 2.2, dont do it yet make sure you understand how the
   api data gets stored so you know how to use it and manipulate it
 - continue with 2.2 check off the boxes as we go 
+- Look at the mock_data.dart is there no arb opportunities? 
 

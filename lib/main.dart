@@ -22,9 +22,10 @@ class MainApp extends StatelessWidget {
       initialRoute: MainScreen.routeName,
       routes: {
         //Routes for the main pages 
-        MainScreen.routeName: (_) => const MainScreen(),
-        LoginScreen.routeName: (_) => const LoginScreen(),
-        SignUpScreen.routeName: (_) => const SignUpScreen(),
+        MainScreen.routeName: (_) => const MainScreen(), //Main screen
+        LoginScreen.routeName: (_) => const LoginScreen(), //Login Screen
+        SignUpScreen.routeName: (_) => const SignUpScreen(), // Signup Screen
+        DashboardScreen.routeName: (_) => const DashboardScreen(), // Dashboard screen
       },
     );
   }

@@ -95,10 +95,10 @@ status).
         - Inforce the password being at least 8 charcters and need a special character
         - Allow for a icon button in the top left for us to go back to the main screen
 
-- [ ] __Step 2.2: Dashboard__
+- [x] __Step 2.2: Dashboard__
     - This is the main dashboard for the app
 
-    - [ ] __Step 2.2.1: Account Icon__
+    - [x] __Step 2.2.1: Account Icon__
         -  Have an icon button in the top left that is a profile button
         - Once pressed have a dropdown popup with the following structure:
             - Display the Username at top
@@ -106,7 +106,7 @@ status).
             - Then a Sign out button that will be used to sign out
         - This can use the flutter PopupMenuButton 
     
-    - [ ] __Step 2.2.2: Live Opportunity List__ 
+    - [x] __Step 2.2.2: Live Opportunity List__ 
         - Create a scrollable list (ListView) on the Dashboard that displays "Arb Opportunities."
         
         - Each Card should show:
