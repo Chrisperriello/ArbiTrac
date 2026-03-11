@@ -59,3 +59,7 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 
 3/11
 - Continue Pahse 2.2, check off as you go  
+- Review the arb_opportunity.dart and step 2.2, dont do it yet make sure you understand how the
+  api data gets stored so you know how to use it and manipulate it
+- continue with 2.2 check off the boxes as we go 
+

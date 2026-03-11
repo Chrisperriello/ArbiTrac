@@ -1,1 +1,211 @@
-// Riverpod providers are added here in later steps.
+import 'package:decimal/decimal.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+
+import '../core/utils/arb_engine.dart';
+import '../models/models.dart';
+import '../services/services.dart';
+
+//gets the oddsApi, it gives the apr is scope
+final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
+  return OddsApiService();
+});
+
+//Async Provider, that will give data in the future
+final rawOddsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
+  ref,
+) async {
+  //Waits for the provider to give out data
+  final service = ref.watch(oddsApiServiceProvider);
+  //Returns the odds
+  return service.fetchOdds();
+});
+
+//Sttragety enums
+enum DashboardSortOption { highestProfit, soonestPayout }
+
+//Provider for the if the sort changes
+final dashboardSortOptionProvider = StateProvider<DashboardSortOption>((ref) {
+  return DashboardSortOption.highestProfit;
+});
+
+//Ticker for the dashboard to refresh
+final dashboardTickerProvider = StreamProvider.autoDispose<int>((ref) {
+  return Stream<int>.periodic(const Duration(seconds: 1), (count) => count);
+});
+
+// Provides all of the arb opportunities
+final arbOpportunitiesProvider =
+    FutureProvider.autoDispose<List<ArbOpportunity>>((ref) async {
+      // get the odds
+      final oddsPayload = await ref.watch(rawOddsProvider.future);
+      //extract the opportunites
+      final opportunities = _extractArbOpportunities(oddsPayload);
+      //Sort option
+      final sortOption = ref.watch(dashboardSortOptionProvider);
+
+      opportunities.sort((a, b) {
+        switch (sortOption) {
+          case DashboardSortOption.highestProfit:
+            return b.profitMarginPercent.compareTo(a.profitMarginPercent);
+          case DashboardSortOption.soonestPayout:
+            return a.commenceTime.compareTo(b.commenceTime);
+        }
+      });
+      return opportunities;
+    });
+
+//This function is for actually extracting the opportunites
+List<ArbOpportunity> _extractArbOpportunities(
+  List<Map<String, dynamic>> events,
+) {
+  final opportunities = <ArbOpportunity>[];
+  final one = Decimal.fromInt(1);
+  final hundred = Decimal.fromInt(100);
+  final supportedMarkets = <String>{'h2h', 'spreads', 'totals', 'outrights'};
+
+  //Loop through the events
+  for (final event in events) {
+    //get general data
+    final awayTeam = event['away_team'] as String? ?? '';
+    final homeTeam = event['home_team'] as String? ?? '';
+    final eventName = '$awayTeam vs $homeTeam';
+    //Use parse date time function
+    final commenceTime =
+        _parseDateTime(event['commence_time']) ?? DateTime.now();
+
+    //Get the bookies as a list
+    final bookmakers = event['bookmakers'] as List<dynamic>? ?? const [];
+    final bestByMarket = <String, Map<String, _OutcomeQuote>>{};
+
+    for (final book in bookmakers) {
+      //Create a new map of the bookie
+      final bookmaker = Map<String, dynamic>.from(book as Map);
+      // get the name
+      final bookmakerTitle = bookmaker['title'] as String? ?? 'Unknown';
+      final lastUpdatedAt =
+          _parseDateTime(bookmaker['last_update']) ?? DateTime.now();
+      //Get the markets
+      final markets = bookmaker['markets'] as List<dynamic>? ?? const [];
+
+      for (final marketNode in markets) {
+        final market = Map<String, dynamic>.from(marketNode as Map);
+        final marketKey = market['key'] as String? ?? '';
+        //only use supported markets
+        if (!supportedMarkets.contains(marketKey)) {
+          continue;
+        }
+        final outcomes = market['outcomes'] as List<dynamic>? ?? const [];
+        final marketBest = bestByMarket.putIfAbsent(
+          marketKey,
+          () => <String, _OutcomeQuote>{},
+        );
+
+        for (final outcomeNode in outcomes) {
+          final outcome = Map<String, dynamic>.from(outcomeNode as Map);
+          //get each name
+          final outcomeName = outcome['name'] as String?;
+          if (outcomeName == null || outcomeName.isEmpty) {
+            continue;
+          }
+          final decimalPrice = _parseDecimal(outcome['decimal_price']);
+          if (decimalPrice == null) {
+            continue;
+          }
+          final existing = marketBest[outcomeName];
+          //only give the best outcome, we will use it later
+          if (existing == null || decimalPrice > existing.decimalOdds) {
+            marketBest[outcomeName] = _OutcomeQuote(
+              decimalOdds: decimalPrice,
+              bookmakerTitle: bookmakerTitle,
+              lastUpdatedAt: lastUpdatedAt,
+            );
+          }
+        }
+      }
+    }
+
+    for (final entry in bestByMarket.entries) {
+      //loop through each market
+      final marketKey = entry.key;
+      //get each outcome
+      final outcomeQuotes = entry.value.values.toList(growable: false);
+      if (outcomeQuotes.length != 2) {
+        continue;
+      }
+      // get the odds and see if there is an opportunity
+      final firstQuote = outcomeQuotes[0];
+      final secondQuote = outcomeQuotes[1];
+      final decimalOdds = [firstQuote.decimalOdds, secondQuote.decimalOdds];
+      final arbSum = ArbEngine.arbitragePercentage(decimalOdds);
+      if (!ArbEngine.isArbitrageOpportunity(decimalOdds)) {
+        continue;
+      }
+      //profit margin
+      final profitMarginPercent = (one - arbSum) * hundred;
+      //update time
+      final freshestUpdate =
+          firstQuote.lastUpdatedAt.isAfter(secondQuote.lastUpdatedAt)
+          ? firstQuote.lastUpdatedAt
+          : secondQuote.lastUpdatedAt;
+
+      // Add the opportunitites to the list
+      opportunities.add(
+        ArbOpportunity(
+          eventName: eventName,
+          marketLabel: _marketLabel(marketKey),
+          bookmakerA: firstQuote.bookmakerTitle,
+          bookmakerB: secondQuote.bookmakerTitle,
+          arbitrageSum: arbSum,
+          profitMarginPercent: profitMarginPercent,
+          commenceTime: commenceTime,
+          lastUpdatedAt: freshestUpdate,
+        ),
+      );
+    }
+  }
+
+  return opportunities;
+}
+
+//Market label
+String _marketLabel(String marketKey) {
+  return switch (marketKey) {
+    'h2h' => 'Moneyline',
+    'spreads' => 'Spread',
+    'totals' => 'Total',
+    'outrights' => 'Outright',
+    _ => marketKey,
+  };
+}
+
+//Get the time
+DateTime? _parseDateTime(dynamic value) {
+  if (value is! String || value.isEmpty) {
+    return null;
+  }
+  return DateTime.tryParse(value);
+}
+
+//Parse the decimal value
+Decimal? _parseDecimal(dynamic value) {
+  return switch (value) {
+    Decimal decimalValue => decimalValue,
+    num numberValue => Decimal.parse(numberValue.toString()),
+    String stringValue => Decimal.tryParse(stringValue),
+    _ => null,
+  };
+}
+
+//Outcome class for formatting it
+class _OutcomeQuote {
+  const _OutcomeQuote({
+    required this.decimalOdds,
+    required this.bookmakerTitle,
+    required this.lastUpdatedAt,
+  });
+
+  final Decimal decimalOdds;
+  final String bookmakerTitle;
+  final DateTime lastUpdatedAt;
+}

@@ -232,6 +232,7 @@ class OddsApiService {
 
   static final RegExp _decimalPattern = RegExp(r'^-?\d+(\.\d+)?$');
 
+  //Rational to decimal 
   Decimal _toDecimal(Rational value) {
     return value.toDecimal(scaleOnInfinitePrecision: _scaleOnInfinitePrecision);
   }
