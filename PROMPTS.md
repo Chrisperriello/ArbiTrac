@@ -63,4 +63,7 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
   api data gets stored so you know how to use it and manipulate it
 - continue with 2.2 check off the boxes as we go 
 - Look at the mock_data.dart is there no arb opportunities? 
+- can we expand the mock data to include the arb opp for testing purposes
+-  Make entire new entries, from your context of mock_data.dart and mock.md, 
+  then add it to mock_data.dart
 
