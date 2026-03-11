@@ -1,1 +1,1 @@
-// Model classes are added here in later steps.
+export 'arb_opportunity.dart';

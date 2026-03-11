@@ -56,3 +56,6 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 -  Lets do Step 2.1 in requirements
 - Test thiis
 - I am getting an error at the comleter.complete(reply) 
+
+3/11
+- Continue Pahse 2.2, check off as you go  
