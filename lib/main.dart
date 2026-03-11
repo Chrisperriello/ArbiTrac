@@ -4,6 +4,8 @@ import 'core/config/app_config.dart';
 import 'screens/screens.dart';
 import 'theme.dart';
 
+
+//Async function for updates
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.load();
@@ -19,6 +21,7 @@ class MainApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       initialRoute: MainScreen.routeName,
       routes: {
+        //Routes for the main pages 
         MainScreen.routeName: (_) => const MainScreen(),
         LoginScreen.routeName: (_) => const LoginScreen(),
         SignUpScreen.routeName: (_) => const SignUpScreen(),

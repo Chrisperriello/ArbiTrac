@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+
+//Stateful widget class
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -11,9 +13,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  //Text controllers for username and password
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
+  //Destroy  
   @override
   void dispose() {
     _usernameController.dispose();
@@ -21,6 +25,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  //Submit function that is just a filler
   void _submit() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -29,17 +34,19 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Login flow will be connected in Phase 3.')),
     );
-  }
+  } 
+
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: SafeArea(
-        child: Padding(
+      body: SafeArea( // Safe OS practice 
+        child: Padding( 
           padding: const EdgeInsets.all(24),
           child: Center(
-            child: ConstrainedBox(
+            child: ConstrainedBox( //Constrains the child
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
                 key: _formKey,
@@ -53,9 +60,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    TextFormField(
+                    TextFormField( //Text form field for controlling Username
                       controller: _usernameController,
-                      textInputAction: TextInputAction.next,
+                      textInputAction: TextInputAction.next, // If we hit enter it will go to the next field
                       decoration: const InputDecoration(labelText: 'Username'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -65,10 +72,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextFormField(
+                    TextFormField( // Controls the password fields 
                       controller: _passwordController,
                       obscureText: true,
-                      textInputAction: TextInputAction.done,
+                      textInputAction: TextInputAction.done, // if we hit enter it will hit enter or done action on the next 
                       decoration: const InputDecoration(labelText: 'Password'),
                       validator: (value) {
                         if (value == null || value.isEmpty) {

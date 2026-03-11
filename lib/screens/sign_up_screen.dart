@@ -10,6 +10,7 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
+  //Controllers 
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -17,6 +18,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]`~+=;]',
   );
 
+
+  //destroy all space
   @override
   void dispose() {
     _usernameController.dispose();
@@ -24,6 +27,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
+
+
+  //submit the password and username and save it, it is not implmented right now
   void _submit() {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -36,6 +42,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     );
   }
 
+
+  //Validate password to make sure it is the correct size and has the right requirements
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Password is required.';
@@ -73,7 +81,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _usernameController,
-                      textInputAction: TextInputAction.next,
+                      textInputAction: TextInputAction.next, // Go onto the next text field
                       decoration: const InputDecoration(labelText: 'Username'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
@@ -86,7 +94,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      textInputAction: TextInputAction.done,
+                      textInputAction: TextInputAction.done, //Go onto the button to submit
                       decoration: const InputDecoration(labelText: 'Password'),
                       validator: _validatePassword,
                       onFieldSubmitted: (_) => _submit(),

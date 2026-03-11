@@ -39,7 +39,7 @@ class MainScreen extends StatelessWidget {
                     child: const Text('Login'),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton(
+                  OutlinedButton( // Different type of button that once again just  changes pages 
                     onPressed: () {
                       Navigator.of(context).pushNamed(SignUpScreen.routeName);
                     },
