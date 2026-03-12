@@ -66,4 +66,9 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 - can we expand the mock data to include the arb opp for testing purposes
 -  Make entire new entries, from your context of mock_data.dart and mock.md, 
   then add it to mock_data.dart
+- Lets begin 2.3 and check off as you go
+- I want to add a new part to requirements for the arbmanuel, it should eb able to flip inbetween american odds and
+   decimal odds, have +/- be a drop down box to control for american odds so its easy for us to know which is which
+   so no parsing for it.
+   
 

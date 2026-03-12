@@ -1,6 +1,7 @@
 import 'package:decimal/decimal.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:rational/rational.dart';
 
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
@@ -24,6 +25,10 @@ final rawOddsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
 //Sttragety enums
 enum DashboardSortOption { highestProfit, soonestPayout }
 
+enum ManualArbOddsFormat { decimal, american }
+
+enum ManualArbAmericanSign { plus, minus }
+
 //Provider for the if the sort changes
 final dashboardSortOptionProvider = StateProvider<DashboardSortOption>((ref) {
   return DashboardSortOption.highestProfit;
@@ -33,6 +38,140 @@ final dashboardSortOptionProvider = StateProvider<DashboardSortOption>((ref) {
 final dashboardTickerProvider = StreamProvider.autoDispose<int>((ref) {
   return Stream<int>.periodic(const Duration(seconds: 1), (count) => count);
 });
+
+final manualArbOddsAProvider = StateProvider.autoDispose<String>((ref) => '');
+final manualArbOddsBProvider = StateProvider.autoDispose<String>((ref) => '');
+final manualArbOddsCProvider = StateProvider.autoDispose<String>((ref) => '');
+final manualArbOddsFormatProvider =
+    StateProvider.autoDispose<ManualArbOddsFormat>(
+      (ref) => ManualArbOddsFormat.decimal,
+    );
+final manualArbAmericanSignAProvider =
+    StateProvider.autoDispose<ManualArbAmericanSign>(
+      (ref) => ManualArbAmericanSign.plus,
+    );
+final manualArbAmericanSignBProvider =
+    StateProvider.autoDispose<ManualArbAmericanSign>(
+      (ref) => ManualArbAmericanSign.plus,
+    );
+final manualArbAmericanSignCProvider =
+    StateProvider.autoDispose<ManualArbAmericanSign>(
+      (ref) => ManualArbAmericanSign.plus,
+    );
+final manualArbTotalInvestmentProvider = StateProvider.autoDispose<String>(
+  (ref) => '',
+);
+
+final manualArbCalculatorProvider =
+    Provider.autoDispose<ManualArbCalculatorState>((ref) {
+      final one = Decimal.fromInt(1);
+      final zero = Decimal.fromInt(0);
+      final hundred = Decimal.fromInt(100);
+      final oddsFormat = ref.watch(manualArbOddsFormatProvider);
+      final oddsInputs = <String>[
+        ref.watch(manualArbOddsAProvider),
+        ref.watch(manualArbOddsBProvider),
+        ref.watch(manualArbOddsCProvider),
+      ];
+      final americanSigns = <ManualArbAmericanSign>[
+        ref.watch(manualArbAmericanSignAProvider),
+        ref.watch(manualArbAmericanSignBProvider),
+        ref.watch(manualArbAmericanSignCProvider),
+      ];
+      final legLabels = <String>['Bookie A', 'Bookie B', 'Bookie C'];
+      final parsedLegs = <_ParsedLeg>[];
+
+      for (var index = 0; index < oddsInputs.length; index++) {
+        final trimmed = oddsInputs[index].trim();
+        if (trimmed.isEmpty) {
+          continue;
+        }
+        late final Decimal parsedOdds;
+        if (oddsFormat == ManualArbOddsFormat.decimal) {
+          final parsedDecimalOdds = _parsePositiveDecimal(trimmed);
+          if (parsedDecimalOdds == null || parsedDecimalOdds <= one) {
+            return const ManualArbCalculatorState(
+              errorMessage: 'Enter valid decimal odds greater than 1.0.',
+            );
+          }
+          parsedOdds = parsedDecimalOdds;
+        } else {
+          final absoluteAmericanOdds = _parsePositiveDecimal(trimmed);
+          if (absoluteAmericanOdds == null || absoluteAmericanOdds < hundred) {
+            return const ManualArbCalculatorState(
+              errorMessage:
+                  'Enter American odds as a numeric value of at least 100.',
+            );
+          }
+          final americanToDecimalOdds = _americanToDecimalOdds(
+            absoluteOdds: absoluteAmericanOdds,
+            sign: americanSigns[index],
+          );
+          if (americanToDecimalOdds == null || americanToDecimalOdds <= one) {
+            return const ManualArbCalculatorState(
+              errorMessage: 'Enter valid American odds.',
+            );
+          }
+          parsedOdds = americanToDecimalOdds;
+        }
+        parsedLegs.add(_ParsedLeg(label: legLabels[index], odds: parsedOdds));
+      }
+
+      if (parsedLegs.length < 2) {
+        return const ManualArbCalculatorState(
+          errorMessage: 'Enter at least two valid odds.',
+        );
+      }
+
+      final totalInvestmentInput = ref.watch(manualArbTotalInvestmentProvider);
+      final totalInvestment = _parsePositiveDecimal(totalInvestmentInput);
+      if (totalInvestment == null || totalInvestment <= zero) {
+        return const ManualArbCalculatorState(
+          errorMessage: 'Enter a total investment greater than 0.',
+        );
+      }
+
+      final decimalOdds = parsedLegs
+          .map((leg) => leg.odds)
+          .toList(growable: false);
+      final arbitrageSum = ArbEngine.arbitragePercentage(decimalOdds);
+      final isArbitrage = ArbEngine.isArbitrageOpportunity(decimalOdds);
+      final stakes = ArbEngine.individualStakes(
+        decimalOdds: decimalOdds,
+        totalInvestment: totalInvestment,
+      );
+
+      final recommendedStakes = <ManualArbRecommendedStake>[];
+      final projectedPayouts = <Decimal>[];
+      for (var index = 0; index < parsedLegs.length; index++) {
+        final leg = parsedLegs[index];
+        final stake = stakes[index];
+        recommendedStakes.add(
+          ManualArbRecommendedStake(
+            label: leg.label,
+            odds: leg.odds,
+            stake: stake,
+          ),
+        );
+        projectedPayouts.add(stake * leg.odds);
+      }
+
+      final guaranteedPayout = projectedPayouts.reduce(
+        (left, right) => left < right ? left : right,
+      );
+      final netProfit = guaranteedPayout - totalInvestment;
+
+      return ManualArbCalculatorState(
+        result: ManualArbCalculationResult(
+          arbitrageSum: arbitrageSum,
+          totalInvestment: totalInvestment,
+          isArbitrage: isArbitrage,
+          recommendedStakes: recommendedStakes,
+          guaranteedPayout: guaranteedPayout,
+          netProfit: netProfit,
+        ),
+      );
+    });
 
 // Provides all of the arb opportunities
 final arbOpportunitiesProvider =
@@ -208,4 +347,76 @@ class _OutcomeQuote {
   final Decimal decimalOdds;
   final String bookmakerTitle;
   final DateTime lastUpdatedAt;
+}
+
+Decimal? _parsePositiveDecimal(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  return Decimal.tryParse(trimmed);
+}
+
+Decimal? _americanToDecimalOdds({
+  required Decimal absoluteOdds,
+  required ManualArbAmericanSign sign,
+}) {
+  final one = Decimal.fromInt(1);
+  final zero = Decimal.fromInt(0);
+  final hundred = Decimal.fromInt(100);
+  if (absoluteOdds <= zero) {
+    return null;
+  }
+  if (sign == ManualArbAmericanSign.plus) {
+    return one + _toDecimal(absoluteOdds / hundred);
+  }
+  return one + _toDecimal(hundred / absoluteOdds);
+}
+
+Decimal _toDecimal(Rational value) {
+  return value.toDecimal(scaleOnInfinitePrecision: 12);
+}
+
+class ManualArbCalculatorState {
+  const ManualArbCalculatorState({this.result, this.errorMessage});
+
+  final ManualArbCalculationResult? result;
+  final String? errorMessage;
+}
+
+class ManualArbCalculationResult {
+  const ManualArbCalculationResult({
+    required this.arbitrageSum,
+    required this.totalInvestment,
+    required this.isArbitrage,
+    required this.recommendedStakes,
+    required this.guaranteedPayout,
+    required this.netProfit,
+  });
+
+  final Decimal arbitrageSum;
+  final Decimal totalInvestment;
+  final bool isArbitrage;
+  final List<ManualArbRecommendedStake> recommendedStakes;
+  final Decimal guaranteedPayout;
+  final Decimal netProfit;
+}
+
+class ManualArbRecommendedStake {
+  const ManualArbRecommendedStake({
+    required this.label,
+    required this.odds,
+    required this.stake,
+  });
+
+  final String label;
+  final Decimal odds;
+  final Decimal stake;
+}
+
+class _ParsedLeg {
+  const _ParsedLeg({required this.label, required this.odds});
+
+  final String label;
+  final Decimal odds;
 }

@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../widgets/widgets.dart';
 import 'main_screen.dart';
-
 
 //Dashboard Screen
 class DashboardScreen extends ConsumerWidget {
@@ -18,8 +18,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Since it is a consumer if has watches the Tickerprovider to know when to refresh
     ref.watch(dashboardTickerProvider);
-    final username = (ModalRoute.of(context)?.settings.arguments as String?) ??
-        'Guest User';
+    final username =
+        (ModalRoute.of(context)?.settings.arguments as String?) ?? 'Guest User';
     final sortOption = ref.watch(dashboardSortOptionProvider);
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
 
@@ -31,14 +31,15 @@ class DashboardScreen extends ConsumerWidget {
             if (value == 'settings') {
               //App bar popup depeneding on the input this is settings
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings screen comes in a later step.')),
+                const SnackBar(
+                  content: Text('Settings screen comes in a later step.'),
+                ),
               );
             }
             if (value == 'signout') {
-              Navigator.of(context).pushNamedAndRemoveUntil(
-                MainScreen.routeName,
-                (route) => false,
-              );
+              Navigator.of(
+                context,
+              ).pushNamedAndRemoveUntil(MainScreen.routeName, (route) => false);
             }
           },
           itemBuilder: (context) => [
@@ -78,6 +79,8 @@ class DashboardScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            const ManualArbCalculatorCard(),
+            const SizedBox(height: 12),
             Row(
               children: [
                 const Text('Sort by'),
@@ -86,7 +89,8 @@ class DashboardScreen extends ConsumerWidget {
                   value: sortOption,
                   onChanged: (value) {
                     if (value != null) {
-                      ref.read(dashboardSortOptionProvider.notifier).state = value;
+                      ref.read(dashboardSortOptionProvider.notifier).state =
+                          value;
                     }
                   },
                   items: const [
@@ -123,7 +127,9 @@ class DashboardScreen extends ConsumerWidget {
                 },
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) {
-                  return Center(child: Text('Failed to load opportunities: $error'));
+                  return Center(
+                    child: Text('Failed to load opportunities: $error'),
+                  );
                 },
               ),
             ),
@@ -134,8 +140,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-
-//The actual opportunity card 
+//The actual opportunity card
 class _OpportunityCard extends StatelessWidget {
   const _OpportunityCard({required this.opportunity});
 
@@ -143,13 +148,14 @@ class _OpportunityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final freshnessSeconds =
-        DateTime.now().difference(opportunity.lastUpdatedAt).inSeconds;
+    final freshnessSeconds = DateTime.now()
+        .difference(opportunity.lastUpdatedAt)
+        .inSeconds;
     final freshnessColor = freshnessSeconds <= 15
         ? Colors.green
         : freshnessSeconds <= 45
-            ? Colors.orange
-            : Colors.red;
+        ? Colors.orange
+        : Colors.red;
 
     return Card(
       child: Padding(
@@ -162,7 +168,9 @@ class _OpportunityCard extends StatelessWidget {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text('Sportsbooks: ${opportunity.bookmakerA} / ${opportunity.bookmakerB}'),
+            Text(
+              'Sportsbooks: ${opportunity.bookmakerA} / ${opportunity.bookmakerB}',
+            ),
             Text('Arb %: ${_formatDecimal(opportunity.profitMarginPercent)}%'),
             Text('Market: ${opportunity.marketLabel}'),
             const SizedBox(height: 8),
@@ -170,7 +178,9 @@ class _OpportunityCard extends StatelessWidget {
               children: [
                 Icon(Icons.circle, size: 10, color: freshnessColor),
                 const SizedBox(width: 8),
-                Text('Updated ${freshnessSeconds < 0 ? 0 : freshnessSeconds}s ago'),
+                Text(
+                  'Updated ${freshnessSeconds < 0 ? 0 : freshnessSeconds}s ago',
+                ),
               ],
             ),
           ],

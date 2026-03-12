@@ -117,8 +117,10 @@ status).
         - Allow for sorting: So Highest profit or soonest payout ect
         - Freshness indicator: a small timer or pulse icon showing how many seconds ago the odds were updated 
         - Remember that this is mocking so we can use mock data for now
-- [ ] __Step 2.3: Manual Arb Calculator__
+- [x] __Step 2.3: Manual Arb Calculator__
     - *Input*: Tow or three text fields for "Odds" from different books
+    - Odds mode toggle: user can switch between Decimal and American odds entry
+    - In American mode each odds line uses a `+/-` dropdown and a numeric field (no sign parsing from text)
     - Field for "Total Investment": Allow the user to input $100, $300, ect.
     - *Output*: Use the engine to display the "Arbitrage %" and the "Required Stakes" to break even/profit based on a total $ amount
     - Also display:
