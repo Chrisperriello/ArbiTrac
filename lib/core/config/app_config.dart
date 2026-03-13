@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConfig {
   static Future<void> load() => dotenv.load(fileName: '.env');
 
+  //Config for getting the api key
   static String get oddsApiKey {
     final key = dotenv.env['ODDS_API_KEY'];
     if (key == null || key.isEmpty || key == 'replace_with_api_key') {

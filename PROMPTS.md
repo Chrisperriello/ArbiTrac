@@ -70,5 +70,7 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 - I want to add a new part to requirements for the arbmanuel, it should eb able to flip inbetween american odds and
    decimal odds, have +/- be a drop down box to control for american odds so its easy for us to know which is which
    so no parsing for it.
-   
+- I want you to make the arb app a drop down that can be collased so it is at the top and at the start is
+  hidden if slected on the drop down the entire menu will pop up 
+
 

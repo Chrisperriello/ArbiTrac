@@ -190,6 +190,8 @@ class _OpportunityCard extends StatelessWidget {
   }
 }
 
+
+//Formatting function for the 
 String _formatDecimal(Decimal value) {
   final source = value.toString();
   final decimalIndex = source.indexOf('.');

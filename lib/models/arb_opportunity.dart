@@ -1,5 +1,6 @@
 import 'package:decimal/decimal.dart';
 
+//Class to represent one Arb opporunity 
 class ArbOpportunity {
   const ArbOpportunity({
     required this.eventName,

@@ -67,6 +67,7 @@ final manualArbCalculatorProvider =
       final one = Decimal.fromInt(1);
       final zero = Decimal.fromInt(0);
       final hundred = Decimal.fromInt(100);
+      final totalInvestmentInput = ref.watch(manualArbTotalInvestmentProvider);
       final oddsFormat = ref.watch(manualArbOddsFormatProvider);
       final oddsInputs = <String>[
         ref.watch(manualArbOddsAProvider),
@@ -123,7 +124,6 @@ final manualArbCalculatorProvider =
         );
       }
 
-      final totalInvestmentInput = ref.watch(manualArbTotalInvestmentProvider);
       final totalInvestment = _parsePositiveDecimal(totalInvestmentInput);
       if (totalInvestment == null || totalInvestment <= zero) {
         return const ManualArbCalculatorState(
@@ -349,6 +349,8 @@ class _OutcomeQuote {
   final DateTime lastUpdatedAt;
 }
 
+
+//Provider for parseing a string into a postive decimal type
 Decimal? _parsePositiveDecimal(String raw) {
   final trimmed = raw.trim();
   if (trimmed.isEmpty) {
@@ -357,6 +359,7 @@ Decimal? _parsePositiveDecimal(String raw) {
   return Decimal.tryParse(trimmed);
 }
 
+//This is so we have a mainstream way of converting between american and decimal odds
 Decimal? _americanToDecimalOdds({
   required Decimal absoluteOdds,
   required ManualArbAmericanSign sign,
@@ -367,16 +370,21 @@ Decimal? _americanToDecimalOdds({
   if (absoluteOdds <= zero) {
     return null;
   }
+  //Given the sign then we know how to translate it
   if (sign == ManualArbAmericanSign.plus) {
     return one + _toDecimal(absoluteOdds / hundred);
   }
   return one + _toDecimal(hundred / absoluteOdds);
 }
 
+
+//To decimal converter 
 Decimal _toDecimal(Rational value) {
   return value.toDecimal(scaleOnInfinitePrecision: 12);
 }
 
+
+//Class for the manual arb calculation
 class ManualArbCalculatorState {
   const ManualArbCalculatorState({this.result, this.errorMessage});
 
@@ -384,6 +392,7 @@ class ManualArbCalculatorState {
   final String? errorMessage;
 }
 
+//Result for the arb calculation 
 class ManualArbCalculationResult {
   const ManualArbCalculationResult({
     required this.arbitrageSum,
@@ -402,6 +411,8 @@ class ManualArbCalculationResult {
   final Decimal netProfit;
 }
 
+
+//This is for the recommnedation of what to stake on each
 class ManualArbRecommendedStake {
   const ManualArbRecommendedStake({
     required this.label,
