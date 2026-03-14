@@ -51,10 +51,9 @@ STARTUP.md
 .env
 lib/core/constants/mock.md
 
-#API
+# Firebase Configuration
 lib/firebase_options.dart
-
-# Firebase configuration files
-GoogleService-Info.plist
-google-services.json
-firebase_options.dart
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+*google-services.json
+*GoogleService-Info.plist
