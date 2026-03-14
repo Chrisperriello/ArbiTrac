@@ -86,3 +86,5 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
   and see the investment 
 - Continue to the next step 
 - firebase startup fails when we set up through google
+- Remove all firebase stuff, this needs a complete overhaul
+- Go through the entire code base and make sure everything that has firebase api keys are in git ignore 

@@ -51,9 +51,14 @@ STARTUP.md
 .env
 lib/core/constants/mock.md
 
-# Firebase Configuration
+# Environment & secret configuration
+.env
+.env.*
+**/.env
+**/.env.*
+
+# Firebase configuration (contains API keys/project IDs)
 lib/firebase_options.dart
-ios/Runner/GoogleService-Info.plist
-android/app/google-services.json
-*google-services.json
-*GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_app_id_file.json
