@@ -22,6 +22,12 @@ class DashboardScreen extends ConsumerWidget {
         (ModalRoute.of(context)?.settings.arguments as String?) ?? 'Guest User';
     final sortOption = ref.watch(dashboardSortOptionProvider);
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
+    final favoritesAsync = ref.watch(favoriteOpportunityIdsProvider);
+    final sportsByKeyAsync = ref.watch(availableSportsByKeyProvider);
+    final favoriteSportKeysAsync = ref.watch(favoriteSportKeysProvider);
+    final favoriteIds = favoritesAsync.asData?.value ?? <String>{};
+    final favoriteSportKeys =
+        favoriteSportKeysAsync.asData?.value ?? <String>{};
 
     return Scaffold(
       appBar: AppBar(
@@ -81,6 +87,57 @@ class DashboardScreen extends ConsumerWidget {
           children: [
             const ManualArbCalculatorCard(),
             const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Pinned sports',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            const SizedBox(height: 6),
+            sportsByKeyAsync.when(
+              data: (sportsByKey) {
+                final sportEntries = sportsByKey.entries.toList(growable: false)
+                  ..sort((a, b) => a.value.compareTo(b.value));
+                return Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: sportEntries
+                      .map(
+                        (entry) => FilterChip(
+                          label: Text(entry.value),
+                          selected: favoriteSportKeys.contains(entry.key),
+                          onSelected: (_) async {
+                            await ref
+                                .read(favoriteSportKeysProvider.notifier)
+                                .toggleFavoriteSport(entry.key);
+                          },
+                        ),
+                      )
+                      .toList(growable: false),
+                );
+              },
+              loading: () => const Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (error, _) => Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Failed to load sports: $error'),
+              ),
+            ),
+            if (favoriteSportKeys.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Showing opportunities for pinned sports only.'),
+              ),
+            ],
+            const SizedBox(height: 12),
             Row(
               children: [
                 const Text('Sort by'),
@@ -110,18 +167,47 @@ class DashboardScreen extends ConsumerWidget {
             Expanded(
               child: opportunitiesAsync.when(
                 data: (opportunities) {
-                  if (opportunities.isEmpty) {
+                  final filtered = favoriteSportKeys.isEmpty
+                      ? opportunities
+                      : opportunities
+                            .where(
+                              (opportunity) => favoriteSportKeys.contains(
+                                opportunity.sportKey,
+                              ),
+                            )
+                            .toList(growable: false);
+                  if (filtered.isEmpty) {
                     return const Center(
                       child: Text('No arbitrage opportunities right now.'),
                     );
                   }
+                  final prioritized = filtered.toList(growable: false)
+                    ..sort((a, b) {
+                      final aFavorite = favoriteIds.contains(a.favoriteId);
+                      final bFavorite = favoriteIds.contains(b.favoriteId);
+                      if (aFavorite == bFavorite) {
+                        return 0;
+                      }
+                      return aFavorite ? -1 : 1;
+                    });
                   return ListView.separated(
-                    itemCount: opportunities.length,
+                    itemCount: prioritized.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      final opportunity = opportunities[index];
-                      return _OpportunityCard(opportunity: opportunity);
+                      final opportunity = prioritized[index];
+                      final isFavorite = favoriteIds.contains(
+                        opportunity.favoriteId,
+                      );
+                      return _OpportunityCard(
+                        opportunity: opportunity,
+                        isFavorite: isFavorite,
+                        onFavoritePressed: () async {
+                          await ref
+                              .read(favoriteOpportunityIdsProvider.notifier)
+                              .toggleFavorite(opportunity.favoriteId);
+                        },
+                      );
                     },
                   );
                 },
@@ -142,9 +228,15 @@ class DashboardScreen extends ConsumerWidget {
 
 //The actual opportunity card
 class _OpportunityCard extends StatelessWidget {
-  const _OpportunityCard({required this.opportunity});
+  const _OpportunityCard({
+    required this.opportunity,
+    required this.isFavorite,
+    required this.onFavoritePressed,
+  });
 
   final ArbOpportunity opportunity;
+  final bool isFavorite;
+  final Future<void> Function() onFavoritePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +259,23 @@ class _OpportunityCard extends StatelessWidget {
               opportunity.eventName,
               style: Theme.of(context).textTheme.titleMedium,
             ),
+            Text('Sport: ${opportunity.sportKey}'),
             const SizedBox(height: 8),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: onFavoritePressed,
+                  icon: Icon(
+                    isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
+                    color: isFavorite
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                  tooltip: isFavorite ? 'Unpin game' : 'Pin game',
+                ),
+                Text(isFavorite ? 'Pinned' : 'Pin to watchlist'),
+              ],
+            ),
             Text(
               'Sportsbooks: ${opportunity.bookmakerA} / ${opportunity.bookmakerB}',
             ),
@@ -190,8 +298,7 @@ class _OpportunityCard extends StatelessWidget {
   }
 }
 
-
-//Formatting function for the 
+//Formatting function for the
 String _formatDecimal(Decimal value) {
   final source = value.toString();
   final decimalIndex = source.indexOf('.');

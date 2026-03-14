@@ -74,3 +74,7 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
   hidden if slected on the drop down the entire menu will pop up 
 
 
+3/13
+
+- Continue with 2.4 
+- We still have to implment favoriting things like sportts not just games 

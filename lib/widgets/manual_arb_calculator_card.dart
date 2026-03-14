@@ -38,6 +38,7 @@ class ManualArbCalculatorCard extends ConsumerWidget {
           const SizedBox(height: 8),
           //If odds are in decimal then
           if (oddsFormat == ManualArbOddsFormat.decimal) ...[
+            //Input fields for each of the cards
             _DecimalInputField(
               label: 'Odds (Bookie A)',
               onChanged: (value) =>

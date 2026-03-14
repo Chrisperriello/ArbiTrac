@@ -12,6 +12,26 @@ final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
   return OddsApiService();
 });
 
+final watchlistServiceProvider = Provider<WatchlistService>((ref) {
+  return WatchlistService();
+});
+
+final availableSportsByKeyProvider =
+    FutureProvider.autoDispose<Map<String, String>>((ref) async {
+      final service = ref.watch(oddsApiServiceProvider);
+      final sports = await service.fetchSports();
+      final byKey = <String, String>{};
+      for (final sport in sports) {
+        final key = sport['key'] as String? ?? '';
+        if (key.isEmpty) {
+          continue;
+        }
+        final title = sport['title'] as String? ?? key;
+        byKey[key] = title;
+      }
+      return byKey;
+    });
+
 //Async Provider, that will give data in the future
 final rawOddsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
   ref,
@@ -61,6 +81,54 @@ final manualArbAmericanSignCProvider =
 final manualArbTotalInvestmentProvider = StateProvider.autoDispose<String>(
   (ref) => '',
 );
+
+final favoriteOpportunityIdsProvider =
+    AsyncNotifierProvider<FavoriteOpportunityIdsNotifier, Set<String>>(
+      FavoriteOpportunityIdsNotifier.new,
+    );
+
+class FavoriteOpportunityIdsNotifier extends AsyncNotifier<Set<String>> {
+  @override
+  Future<Set<String>> build() async {
+    final watchlistService = ref.watch(watchlistServiceProvider);
+    return watchlistService.loadFavoriteOpportunityIds();
+  }
+
+  Future<void> toggleFavorite(String opportunityId) async {
+    final current = state.asData?.value ?? <String>{};
+    final next = Set<String>.from(current);
+    if (!next.add(opportunityId)) {
+      next.remove(opportunityId);
+    }
+    state = AsyncData(next);
+    final watchlistService = ref.read(watchlistServiceProvider);
+    await watchlistService.saveFavoriteOpportunityIds(next);
+  }
+}
+
+final favoriteSportKeysProvider =
+    AsyncNotifierProvider<FavoriteSportKeysNotifier, Set<String>>(
+      FavoriteSportKeysNotifier.new,
+    );
+
+class FavoriteSportKeysNotifier extends AsyncNotifier<Set<String>> {
+  @override
+  Future<Set<String>> build() async {
+    final watchlistService = ref.watch(watchlistServiceProvider);
+    return watchlistService.loadFavoriteSportKeys();
+  }
+
+  Future<void> toggleFavoriteSport(String sportKey) async {
+    final current = state.asData?.value ?? <String>{};
+    final next = Set<String>.from(current);
+    if (!next.add(sportKey)) {
+      next.remove(sportKey);
+    }
+    state = AsyncData(next);
+    final watchlistService = ref.read(watchlistServiceProvider);
+    await watchlistService.saveFavoriteSportKeys(next);
+  }
+}
 
 final manualArbCalculatorProvider =
     Provider.autoDispose<ManualArbCalculatorState>((ref) {
@@ -206,6 +274,7 @@ List<ArbOpportunity> _extractArbOpportunities(
   //Loop through the events
   for (final event in events) {
     //get general data
+    final sportKey = event['sport_key'] as String? ?? 'unknown_sport';
     final awayTeam = event['away_team'] as String? ?? '';
     final homeTeam = event['home_team'] as String? ?? '';
     final eventName = '$awayTeam vs $homeTeam';
@@ -291,6 +360,7 @@ List<ArbOpportunity> _extractArbOpportunities(
       // Add the opportunitites to the list
       opportunities.add(
         ArbOpportunity(
+          sportKey: sportKey,
           eventName: eventName,
           marketLabel: _marketLabel(marketKey),
           bookmakerA: firstQuote.bookmakerTitle,
@@ -349,7 +419,6 @@ class _OutcomeQuote {
   final DateTime lastUpdatedAt;
 }
 
-
 //Provider for parseing a string into a postive decimal type
 Decimal? _parsePositiveDecimal(String raw) {
   final trimmed = raw.trim();
@@ -377,12 +446,10 @@ Decimal? _americanToDecimalOdds({
   return one + _toDecimal(hundred / absoluteOdds);
 }
 
-
-//To decimal converter 
+//To decimal converter
 Decimal _toDecimal(Rational value) {
   return value.toDecimal(scaleOnInfinitePrecision: 12);
 }
-
 
 //Class for the manual arb calculation
 class ManualArbCalculatorState {
@@ -392,7 +459,7 @@ class ManualArbCalculatorState {
   final String? errorMessage;
 }
 
-//Result for the arb calculation 
+//Result for the arb calculation
 class ManualArbCalculationResult {
   const ManualArbCalculationResult({
     required this.arbitrageSum,
@@ -410,7 +477,6 @@ class ManualArbCalculationResult {
   final Decimal guaranteedPayout;
   final Decimal netProfit;
 }
-
 
 //This is for the recommnedation of what to stake on each
 class ManualArbRecommendedStake {

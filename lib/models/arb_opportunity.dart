@@ -1,8 +1,9 @@
 import 'package:decimal/decimal.dart';
 
-//Class to represent one Arb opporunity 
+//Class to represent one Arb opporunity
 class ArbOpportunity {
   const ArbOpportunity({
+    required this.sportKey,
     required this.eventName,
     required this.marketLabel,
     required this.bookmakerA,
@@ -13,6 +14,7 @@ class ArbOpportunity {
     required this.lastUpdatedAt,
   });
 
+  final String sportKey;
   final String eventName;
   final String marketLabel;
   final String bookmakerA;
@@ -21,4 +23,7 @@ class ArbOpportunity {
   final Decimal profitMarginPercent;
   final DateTime commenceTime;
   final DateTime lastUpdatedAt;
+
+  String get favoriteId =>
+      '$sportKey|$eventName|$marketLabel|$bookmakerA|$bookmakerB|${commenceTime.toIso8601String()}';
 }
