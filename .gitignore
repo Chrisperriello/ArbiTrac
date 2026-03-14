@@ -53,3 +53,8 @@ lib/core/constants/mock.md
 
 #API
 lib/firebase_options.dart
+
+# Firebase configuration files
+GoogleService-Info.plist
+google-services.json
+firebase_options.dart
