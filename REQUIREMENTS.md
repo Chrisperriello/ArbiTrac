@@ -151,20 +151,20 @@ status).
     - Intergrate the main screen for the application
 
 
-    - [x] __Step 3.1.1: Login__
+    - [ ] __Step 3.1.1: Login__
         - This will use Firebase Auth to check if the login is valid
         - If an error occurs then add a bottom popup (Toast) to say something like "Invalid Username and/or password, if first time pleas go to sign up"
         - If valid login and bring them to the main dashboard
         - Also start the load of any data from the cloud or local data needed to represent that specific user
         - Implemented Firebase email/password sign-in with bottom `SnackBar` error feedback and success routing to dashboard
-    - [x] __Step 3.1.2: Sign up__
+    - [ ] __Step 3.1.2: Sign up__
         - This will use Firebase Auth to check if the sign up is valid
         - If an error occurs then add a bottom popup (Toast) to say something like "Invalid Username and/or password"
         - Inforce the password being at least 8 charcters and need a special character
         - If valid login and bring them to the main dashboard
         - Also start the load of any data from the cloud or local data needed to represent that specific user
         - Implemented Firebase email/password account creation with bottom `SnackBar` error feedback and success routing to dashboard
-    - [x] __Step 3.1.3: Google__
+    - [ ] __Step 3.1.3: Google__
         - Alternativley have the sign up page have a google sign up button that uses the firebase Auth google plugin to create or sign up for an account
         - Implemented Google sign-in button on Sign Up screen and Firebase credential-based sign-in flow
     - [ ] __Step 3.1.4: Username__

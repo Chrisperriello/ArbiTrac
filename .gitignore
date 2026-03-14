@@ -50,3 +50,6 @@ app.*.map.json
 STARTUP.md
 .env
 lib/core/constants/mock.md
+
+#API
+lib/firebase_options.dart
