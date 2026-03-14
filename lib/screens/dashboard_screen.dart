@@ -26,8 +26,16 @@ class DashboardScreen extends ConsumerWidget {
     final sportsByKeyAsync = ref.watch(availableSportsByKeyProvider);
     final favoriteSportKeysAsync = ref.watch(favoriteSportKeysProvider);
     final favoriteIds = favoritesAsync.asData?.value ?? <String>{};
+    final sportsByKey = sportsByKeyAsync.asData?.value ?? <String, String>{};
     final favoriteSportKeys =
         favoriteSportKeysAsync.asData?.value ?? <String>{};
+    final searchableOpportunities = opportunitiesAsync.asData == null
+        ? const <ArbOpportunity>[]
+        : _prepareDisplayedOpportunities(
+            opportunities: opportunitiesAsync.asData!.value,
+            favoriteSportKeys: favoriteSportKeys,
+            favoriteOpportunityIds: favoriteIds,
+          );
 
     return Scaffold(
       appBar: AppBar(
@@ -80,6 +88,34 @@ class DashboardScreen extends ConsumerWidget {
           icon: const Icon(Icons.account_circle_outlined),
         ),
         title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            tooltip: 'Search games',
+            onPressed: searchableOpportunities.isEmpty
+                ? null
+                : () async {
+                    final selected = await showSearch<ArbOpportunity?>(
+                      context: context,
+                      delegate: _OpportunitySearchDelegate(
+                        opportunities: searchableOpportunities,
+                        favoriteOpportunityIds: favoriteIds,
+                        sportsByKey: sportsByKey,
+                      ),
+                    );
+                    if (!context.mounted || selected == null) {
+                      return;
+                    }
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Selected ${selected.eventName}. Detailed view comes in Step 2.6.',
+                        ),
+                      ),
+                    );
+                  },
+            icon: const Icon(Icons.search),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -167,35 +203,22 @@ class DashboardScreen extends ConsumerWidget {
             Expanded(
               child: opportunitiesAsync.when(
                 data: (opportunities) {
-                  final filtered = favoriteSportKeys.isEmpty
-                      ? opportunities
-                      : opportunities
-                            .where(
-                              (opportunity) => favoriteSportKeys.contains(
-                                opportunity.sportKey,
-                              ),
-                            )
-                            .toList(growable: false);
-                  if (filtered.isEmpty) {
+                  final displayed = _prepareDisplayedOpportunities(
+                    opportunities: opportunities,
+                    favoriteSportKeys: favoriteSportKeys,
+                    favoriteOpportunityIds: favoriteIds,
+                  );
+                  if (displayed.isEmpty) {
                     return const Center(
                       child: Text('No arbitrage opportunities right now.'),
                     );
                   }
-                  final prioritized = filtered.toList(growable: false)
-                    ..sort((a, b) {
-                      final aFavorite = favoriteIds.contains(a.favoriteId);
-                      final bFavorite = favoriteIds.contains(b.favoriteId);
-                      if (aFavorite == bFavorite) {
-                        return 0;
-                      }
-                      return aFavorite ? -1 : 1;
-                    });
                   return ListView.separated(
-                    itemCount: prioritized.length,
+                    itemCount: displayed.length,
                     separatorBuilder: (context, index) =>
                         const SizedBox(height: 8),
                     itemBuilder: (context, index) {
-                      final opportunity = prioritized[index];
+                      final opportunity = displayed[index];
                       final isFavorite = favoriteIds.contains(
                         opportunity.favoriteId,
                       );
@@ -224,6 +247,30 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
+
+List<ArbOpportunity> _prepareDisplayedOpportunities({
+  required List<ArbOpportunity> opportunities,
+  required Set<String> favoriteSportKeys,
+  required Set<String> favoriteOpportunityIds,
+}) {
+  final filtered = favoriteSportKeys.isEmpty
+      ? opportunities
+      : opportunities
+            .where(
+              (opportunity) => favoriteSportKeys.contains(opportunity.sportKey),
+            )
+            .toList(growable: false);
+  final prioritized = filtered.toList(growable: false)
+    ..sort((a, b) {
+      final aFavorite = favoriteOpportunityIds.contains(a.favoriteId);
+      final bFavorite = favoriteOpportunityIds.contains(b.favoriteId);
+      if (aFavorite == bFavorite) {
+        return 0;
+      }
+      return aFavorite ? -1 : 1;
+    });
+  return prioritized;
 }
 
 //The actual opportunity card
@@ -310,4 +357,104 @@ String _formatDecimal(Decimal value) {
     return source;
   }
   return source.substring(0, maxLength);
+}
+
+class _OpportunitySearchDelegate extends SearchDelegate<ArbOpportunity?> {
+  _OpportunitySearchDelegate({
+    required this.opportunities,
+    required this.favoriteOpportunityIds,
+    required this.sportsByKey,
+  });
+
+  final List<ArbOpportunity> opportunities;
+  final Set<String> favoriteOpportunityIds;
+  final Map<String, String> sportsByKey;
+
+  @override
+  String? get searchFieldLabel => 'Search games, markets, sportsbooks';
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      if (query.isNotEmpty)
+        IconButton(
+          onPressed: () {
+            query = '';
+          },
+          icon: const Icon(Icons.clear),
+        ),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      onPressed: () {
+        close(context, null);
+      },
+      icon: const Icon(Icons.arrow_back),
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return _buildMatchesList(_matchingOpportunities());
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    return _buildMatchesList(_matchingOpportunities());
+  }
+
+  List<ArbOpportunity> _matchingOpportunities() {
+    final normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery.isEmpty) {
+      return opportunities;
+    }
+    return opportunities
+        .where((opportunity) {
+          final sportLabel =
+              (sportsByKey[opportunity.sportKey] ?? opportunity.sportKey)
+                  .toLowerCase();
+          final haystack =
+              '${opportunity.eventName} ${opportunity.marketLabel} '
+                      '${opportunity.bookmakerA} ${opportunity.bookmakerB} '
+                      '${opportunity.sportKey} $sportLabel'
+                  .toLowerCase();
+          return haystack.contains(normalizedQuery);
+        })
+        .toList(growable: false);
+  }
+
+  Widget _buildMatchesList(List<ArbOpportunity> matches) {
+    if (matches.isEmpty) {
+      return const Center(child: Text('No games match your search.'));
+    }
+    return ListView.separated(
+      itemCount: matches.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final opportunity = matches[index];
+        final sportLabel =
+            sportsByKey[opportunity.sportKey] ?? opportunity.sportKey;
+        final isFavorite = favoriteOpportunityIds.contains(
+          opportunity.favoriteId,
+        );
+        return ListTile(
+          title: Text(opportunity.eventName),
+          subtitle: Text(
+            'Sport: $sportLabel • Market: ${opportunity.marketLabel} • '
+            'Books: ${opportunity.bookmakerA}/${opportunity.bookmakerB}',
+          ),
+          trailing: Icon(
+            isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
+            size: 18,
+          ),
+          onTap: () {
+            close(context, opportunity);
+          },
+        );
+      },
+    );
+  }
 }

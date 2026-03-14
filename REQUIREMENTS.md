@@ -131,8 +131,10 @@ status).
     - Allow the user to pin a game they are looking at so they do not lose it if the screen updates 
     - This should use the shared prefrence to save the users favorited sports/games so they do not refilter when the dashboard refreshes
     - Implemented local pinned-watchlist persistence with `shared_preferences` and favorites-first ordering on dashboard cards
-- [ ] __Step 2.5: Search__
+    - Implemented pinned sport preferences with persisted `shared_preferences` keys and dashboard filtering by selected sports
+- [x] __Step 2.5: Search__
     - Allow for a mag-glass icon to pull up a blurred text box (SearchDelegate) to search for games in the list of all games that are displayed
+    - Added app bar search icon and `SearchDelegate` flow that searches displayed games by event, market, sportsbook, and sport
 
 - [ ] __Step 2.6: Sports Card__:
     - You should be able to press on a card and see 
