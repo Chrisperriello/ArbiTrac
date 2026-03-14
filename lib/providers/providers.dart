@@ -42,6 +42,25 @@ final rawOddsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
   return service.fetchOdds();
 });
 
+final selectedMarketKeyProvider = StateProvider.autoDispose
+    .family<String?, String>((ref, eventId) => null);
+
+final opportunityInvestmentInputProvider = StateProvider.autoDispose
+    .family<String, String>((ref, opportunityId) => '');
+
+final sportsEventDetailProvider = FutureProvider.autoDispose
+    .family<SportsEventDetail?, String>((ref, eventId) async {
+      final events = await ref.watch(rawOddsProvider.future);
+      for (final event in events) {
+        final id = event['id'] as String? ?? '';
+        if (id != eventId) {
+          continue;
+        }
+        return _toSportsEventDetail(event);
+      }
+      return null;
+    });
+
 //Sttragety enums
 enum DashboardSortOption { highestProfit, soonestPayout }
 
@@ -52,11 +71,6 @@ enum ManualArbAmericanSign { plus, minus }
 //Provider for the if the sort changes
 final dashboardSortOptionProvider = StateProvider<DashboardSortOption>((ref) {
   return DashboardSortOption.highestProfit;
-});
-
-//Ticker for the dashboard to refresh
-final dashboardTickerProvider = StreamProvider.autoDispose<int>((ref) {
-  return Stream<int>.periodic(const Duration(seconds: 1), (count) => count);
 });
 
 final manualArbOddsAProvider = StateProvider.autoDispose<String>((ref) => '');
@@ -274,6 +288,7 @@ List<ArbOpportunity> _extractArbOpportunities(
   //Loop through the events
   for (final event in events) {
     //get general data
+    final eventId = event['id'] as String? ?? '';
     final sportKey = event['sport_key'] as String? ?? 'unknown_sport';
     final awayTeam = event['away_team'] as String? ?? '';
     final homeTeam = event['home_team'] as String? ?? '';
@@ -360,11 +375,14 @@ List<ArbOpportunity> _extractArbOpportunities(
       // Add the opportunitites to the list
       opportunities.add(
         ArbOpportunity(
+          eventId: eventId,
           sportKey: sportKey,
           eventName: eventName,
           marketLabel: _marketLabel(marketKey),
           bookmakerA: firstQuote.bookmakerTitle,
           bookmakerB: secondQuote.bookmakerTitle,
+          decimalOddsA: firstQuote.decimalOdds,
+          decimalOddsB: secondQuote.decimalOdds,
           arbitrageSum: arbSum,
           profitMarginPercent: profitMarginPercent,
           commenceTime: commenceTime,
@@ -375,6 +393,76 @@ List<ArbOpportunity> _extractArbOpportunities(
   }
 
   return opportunities;
+}
+
+SportsEventDetail _toSportsEventDetail(Map<String, dynamic> event) {
+  final eventId = event['id'] as String? ?? '';
+  final sportKey = event['sport_key'] as String? ?? 'unknown_sport';
+  final awayTeam = event['away_team'] as String? ?? '';
+  final homeTeam = event['home_team'] as String? ?? '';
+  final commenceTime = _parseDateTime(event['commence_time']) ?? DateTime.now();
+  final bookmakers = event['bookmakers'] as List<dynamic>? ?? const [];
+  final marketsByKey = <String, List<SportsEventBookmakerOdds>>{};
+
+  for (final bookmakerNode in bookmakers) {
+    final bookmaker = Map<String, dynamic>.from(bookmakerNode as Map);
+    final bookmakerTitle = bookmaker['title'] as String? ?? 'Unknown';
+    final lastUpdatedAt =
+        _parseDateTime(bookmaker['last_update']) ?? DateTime.now();
+    final markets = bookmaker['markets'] as List<dynamic>? ?? const [];
+
+    for (final marketNode in markets) {
+      final market = Map<String, dynamic>.from(marketNode as Map);
+      final marketKey = market['key'] as String? ?? '';
+      if (marketKey.isEmpty) {
+        continue;
+      }
+      final outcomes = market['outcomes'] as List<dynamic>? ?? const [];
+      final parsedOutcomes = outcomes
+          .map((outcomeNode) {
+            final outcome = Map<String, dynamic>.from(outcomeNode as Map);
+            final name = outcome['name'] as String? ?? 'Unknown';
+            final decimalOdds = _parseDecimal(outcome['decimal_price']);
+            final point = _parseDecimal(outcome['point']);
+            return SportsEventOutcomeOdds(
+              name: name,
+              decimalOdds: decimalOdds,
+              point: point,
+            );
+          })
+          .toList(growable: false);
+
+      final entry = SportsEventBookmakerOdds(
+        bookmakerTitle: bookmakerTitle,
+        lastUpdatedAt: lastUpdatedAt,
+        outcomes: parsedOutcomes,
+      );
+      final marketEntries = marketsByKey.putIfAbsent(
+        marketKey,
+        () => <SportsEventBookmakerOdds>[],
+      );
+      marketEntries.add(entry);
+    }
+  }
+
+  final markets = marketsByKey.entries
+      .map(
+        (entry) => SportsEventMarketDetail(
+          marketKey: entry.key,
+          marketLabel: _marketLabel(entry.key),
+          bookmakerOdds: entry.value,
+        ),
+      )
+      .toList(growable: false);
+
+  return SportsEventDetail(
+    eventId: eventId,
+    sportKey: sportKey,
+    awayTeam: awayTeam,
+    homeTeam: homeTeam,
+    commenceTime: commenceTime,
+    markets: markets,
+  );
 }
 
 //Market label

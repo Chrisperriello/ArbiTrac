@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import '../models/models.dart';
 import '../providers/providers.dart';
 import '../widgets/widgets.dart';
 import 'main_screen.dart';
+import 'sports_event_detail_screen.dart';
 
 //Dashboard Screen
 class DashboardScreen extends ConsumerWidget {
@@ -16,8 +19,6 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Since it is a consumer if has watches the Tickerprovider to know when to refresh
-    ref.watch(dashboardTickerProvider);
     final username =
         (ModalRoute.of(context)?.settings.arguments as String?) ?? 'Guest User';
     final sortOption = ref.watch(dashboardSortOptionProvider);
@@ -114,7 +115,7 @@ class DashboardScreen extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    'Selected ${selected.eventName}. Detailed view comes in Step 2.6.',
+                    'Selected ${selected.eventName}. Tap Details on the card to view market odds.',
                   ),
                 ),
               );
@@ -231,6 +232,15 @@ class DashboardScreen extends ConsumerWidget {
                       return _OpportunityCard(
                         opportunity: opportunity,
                         isFavorite: isFavorite,
+                        onOpenDetails: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => SportsEventDetailScreen(
+                                opportunity: opportunity,
+                              ),
+                            ),
+                          );
+                        },
                         onFavoritePressed: () async {
                           await ref
                               .read(favoriteOpportunityIdsProvider.notifier)
@@ -284,67 +294,57 @@ class _OpportunityCard extends StatelessWidget {
   const _OpportunityCard({
     required this.opportunity,
     required this.isFavorite,
+    required this.onOpenDetails,
     required this.onFavoritePressed,
   });
 
   final ArbOpportunity opportunity;
   final bool isFavorite;
+  final VoidCallback onOpenDetails;
   final Future<void> Function() onFavoritePressed;
 
   @override
   Widget build(BuildContext context) {
-    final freshnessSeconds = DateTime.now()
-        .difference(opportunity.lastUpdatedAt)
-        .inSeconds;
-    final freshnessColor = freshnessSeconds <= 15
-        ? Colors.green
-        : freshnessSeconds <= 45
-        ? Colors.orange
-        : Colors.red;
-
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              opportunity.eventName,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            Text('Sport: ${opportunity.sportKey}'),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                IconButton(
-                  onPressed: onFavoritePressed,
-                  icon: Icon(
-                    isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
-                    color: isFavorite
-                        ? Theme.of(context).colorScheme.primary
-                        : null,
+      child: InkWell(
+        onTap: onOpenDetails,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                opportunity.eventName,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Text('Sport: ${opportunity.sportKey}'),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: onFavoritePressed,
+                    icon: Icon(
+                      isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
+                      color: isFavorite
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                    tooltip: isFavorite ? 'Unpin game' : 'Pin game',
                   ),
-                  tooltip: isFavorite ? 'Unpin game' : 'Pin game',
-                ),
-                Text(isFavorite ? 'Pinned' : 'Pin to watchlist'),
-              ],
-            ),
-            Text(
-              'Sportsbooks: ${opportunity.bookmakerA} / ${opportunity.bookmakerB}',
-            ),
-            Text('Arb %: ${_formatDecimal(opportunity.profitMarginPercent)}%'),
-            Text('Market: ${opportunity.marketLabel}'),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.circle, size: 10, color: freshnessColor),
-                const SizedBox(width: 8),
-                Text(
-                  'Updated ${freshnessSeconds < 0 ? 0 : freshnessSeconds}s ago',
-                ),
-              ],
-            ),
-          ],
+                  Text(isFavorite ? 'Pinned' : 'Pin to watchlist'),
+                ],
+              ),
+              Text(
+                'Sportsbooks: ${opportunity.bookmakerA} / ${opportunity.bookmakerB}',
+              ),
+              Text(
+                'Arb %: ${_formatDecimal(opportunity.profitMarginPercent)}%',
+              ),
+              Text('Market: ${opportunity.marketLabel}'),
+              const SizedBox(height: 8),
+              _FreshnessIndicator(lastUpdatedAt: opportunity.lastUpdatedAt),
+            ],
+          ),
         ),
       ),
     );
@@ -461,6 +461,54 @@ class _OpportunitySearchDelegate extends SearchDelegate<ArbOpportunity?> {
           },
         );
       },
+    );
+  }
+}
+
+class _FreshnessIndicator extends StatefulWidget {
+  const _FreshnessIndicator({required this.lastUpdatedAt});
+
+  final DateTime lastUpdatedAt;
+
+  @override
+  State<_FreshnessIndicator> createState() => _FreshnessIndicatorState();
+}
+
+class _FreshnessIndicatorState extends State<_FreshnessIndicator> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final freshnessSeconds = DateTime.now()
+        .difference(widget.lastUpdatedAt)
+        .inSeconds;
+    final freshnessColor = freshnessSeconds <= 15
+        ? Colors.green
+        : freshnessSeconds <= 45
+        ? Colors.orange
+        : Colors.red;
+    return Row(
+      children: [
+        Icon(Icons.circle, size: 10, color: freshnessColor),
+        const SizedBox(width: 8),
+        Text('Updated ${freshnessSeconds < 0 ? 0 : freshnessSeconds}s ago'),
+      ],
     );
   }
 }

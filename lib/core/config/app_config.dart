@@ -1,7 +1,13 @@
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
-  static Future<void> load() => dotenv.load(fileName: '.env');
+  static Future<void> load() async {
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (_) {
+      // Keep startup resilient when .env is missing in local/dev environments.
+    }
+  }
 
   //Config for getting the api key
   static String get oddsApiKey {

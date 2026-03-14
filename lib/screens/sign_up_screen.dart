@@ -12,14 +12,14 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  //Controllers 
+  //Controllers
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _specialCharacterPattern = RegExp(
     r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]`~+=;]',
   );
-
+  bool _isSubmitting = false;
 
   //destroy all space
   @override
@@ -29,20 +29,26 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-
-
-  //submit the password and username and save it, it is not implmented right now
-  void _submit() {
+  //submit the password and username and save it
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     FocusScope.of(context).unfocus();
-    Navigator.of(context).pushNamed(
-      DashboardScreen.routeName, // Send to Dashboard Screen
+    setState(() => _isSubmitting = true);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      DashboardScreen.routeName,
+      (route) => false,
       arguments: _usernameController.text.trim(),
     );
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+    }
   }
-
 
   //Validate password to make sure it is the correct size and has the right requirements
   String? _validatePassword(String? value) {
@@ -82,11 +88,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     const SizedBox(height: 24),
                     TextFormField(
                       controller: _usernameController,
-                      textInputAction: TextInputAction.next, // Go onto the next text field
-                      decoration: const InputDecoration(labelText: 'Username'),
+                      textInputAction:
+                          TextInputAction.next, // Go onto the next text field
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Username is required.';
+                          return 'Email is required.';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Enter a valid email.';
                         }
                         return null;
                       },
@@ -95,15 +105,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     TextFormField(
                       controller: _passwordController,
                       obscureText: true,
-                      textInputAction: TextInputAction.done, //Go onto the button to submit
+                      textInputAction:
+                          TextInputAction.done, //Go onto the button to submit
                       decoration: const InputDecoration(labelText: 'Password'),
                       validator: _validatePassword,
-                      onFieldSubmitted: (_) => _submit(),
+                      onFieldSubmitted: (_) {
+                        _submit();
+                      },
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: _submit,
-                      child: const Text('Create Account'),
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: Text(
+                        _isSubmitting
+                            ? 'Creating Account...'
+                            : 'Create Account',
+                      ),
                     ),
                   ],
                 ),

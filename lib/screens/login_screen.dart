@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'dashboard_screen.dart';
 
-
 //Stateful widget class
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,8 +17,9 @@ class _LoginScreenState extends State<LoginScreen> {
   //Text controllers for username and password
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isSubmitting = false;
 
-  //Destroy  
+  //Destroy
   @override
   void dispose() {
     _usernameController.dispose();
@@ -27,29 +27,38 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  //Submit function that is just a filler
-  void _submit() {
+  //Submit function
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
     FocusScope.of(context).unfocus();
-    Navigator.of(context).pushNamed(
-      DashboardScreen.routeName, //Send to Dashboard Screen
+    setState(() => _isSubmitting = true);
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      DashboardScreen.routeName,
+      (route) => false,
       arguments: _usernameController.text.trim(),
     );
+    if (mounted) {
+      setState(() => _isSubmitting = false);
+    }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: SafeArea( // Safe OS practice 
-        child: Padding( 
+      body: SafeArea(
+        // Safe OS practice
+        child: Padding(
           padding: const EdgeInsets.all(24),
           child: Center(
-            child: ConstrainedBox( //Constrains the child
+            child: ConstrainedBox(
+              //Constrains the child
               constraints: const BoxConstraints(maxWidth: 420),
               child: Form(
                 key: _formKey,
@@ -63,22 +72,29 @@ class _LoginScreenState extends State<LoginScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
-                    TextFormField( //Text form field for controlling Username
+                    TextFormField(
+                      //Text form field for controlling Username
                       controller: _usernameController,
-                      textInputAction: TextInputAction.next, // If we hit enter it will go to the next field
-                      decoration: const InputDecoration(labelText: 'Username'),
+                      textInputAction: TextInputAction
+                          .next, // If we hit enter it will go to the next field
+                      decoration: const InputDecoration(labelText: 'Email'),
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
-                          return 'Username is required.';
+                          return 'Email is required.';
+                        }
+                        if (!value.contains('@')) {
+                          return 'Enter a valid email.';
                         }
                         return null;
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextFormField( // Controls the password fields 
+                    TextFormField(
+                      // Controls the password fields
                       controller: _passwordController,
                       obscureText: true,
-                      textInputAction: TextInputAction.done, // if we hit enter it will hit enter or done action on the next 
+                      textInputAction: TextInputAction
+                          .done, // if we hit enter it will hit enter or done action on the next
                       decoration: const InputDecoration(labelText: 'Password'),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -86,12 +102,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         }
                         return null;
                       },
-                      onFieldSubmitted: (_) => _submit(),
+                      onFieldSubmitted: (_) {
+                        _submit();
+                      },
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
-                      onPressed: _submit,
-                      child: const Text('Login'),
+                      onPressed: _isSubmitting ? null : _submit,
+                      child: Text(_isSubmitting ? 'Logging in...' : 'Login'),
                     ),
                   ],
                 ),

@@ -78,3 +78,11 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 
 - Continue with 2.4 
 - We still have to implment favoriting things like sportts not just games 
+- Continue to 2.5 
+- Continue to the next requirement 
+-  You should be able to add the investment and it tells you what to invest and
+  where 
+- Refactor it so it is inside the details, so u press on the card and you go in
+  and see the investment 
+- Continue to the next step 
+- firebase startup fails when we set up through google
