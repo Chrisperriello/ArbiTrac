@@ -91,28 +91,34 @@ class DashboardScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Search games',
-            onPressed: searchableOpportunities.isEmpty
-                ? null
-                : () async {
-                    final selected = await showSearch<ArbOpportunity?>(
-                      context: context,
-                      delegate: _OpportunitySearchDelegate(
-                        opportunities: searchableOpportunities,
-                        favoriteOpportunityIds: favoriteIds,
-                        sportsByKey: sportsByKey,
-                      ),
-                    );
-                    if (!context.mounted || selected == null) {
-                      return;
-                    }
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          'Selected ${selected.eventName}. Detailed view comes in Step 2.6.',
-                        ),
-                      ),
-                    );
-                  },
+            onPressed: () async {
+              if (searchableOpportunities.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('No opportunities available to search yet.'),
+                  ),
+                );
+                return;
+              }
+              final selected = await showSearch<ArbOpportunity?>(
+                context: context,
+                delegate: _OpportunitySearchDelegate(
+                  opportunities: searchableOpportunities,
+                  favoriteOpportunityIds: favoriteIds,
+                  sportsByKey: sportsByKey,
+                ),
+              );
+              if (!context.mounted || selected == null) {
+                return;
+              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Selected ${selected.eventName}. Detailed view comes in Step 2.6.',
+                  ),
+                ),
+              );
+            },
             icon: const Icon(Icons.search),
           ),
         ],
