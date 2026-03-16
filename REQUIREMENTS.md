@@ -151,7 +151,7 @@ status).
     - Intergrate the main screen for the application
 
 
-    - [ ] __Step 3.1.1: Login__
+    - [x] __Step 3.1.1: Login__
         - This will use Firebase Auth to check if the login is valid
         - If an error occurs then add a bottom popup (Toast) to say something like "Invalid Username and/or password, if first time pleas go to sign up"
         - If valid login and bring them to the main dashboard

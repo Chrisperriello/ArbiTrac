@@ -12,6 +12,14 @@ final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
   return OddsApiService();
 });
 
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService();
+});
+
+final userProfileServiceProvider = Provider<UserProfileService>((ref) {
+  return UserProfileService();
+});
+
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
 });
@@ -411,6 +419,8 @@ SportsEventDetail _toSportsEventDetail(Map<String, dynamic> event) {
         _parseDateTime(bookmaker['last_update']) ?? DateTime.now();
     final markets = bookmaker['markets'] as List<dynamic>? ?? const [];
 
+    //This loops through each of the sports books and formats the outcomes and
+    //adds each marketentries into the map with the list of parsed outcomes and
     for (final marketNode in markets) {
       final market = Map<String, dynamic>.from(marketNode as Map);
       final marketKey = market['key'] as String? ?? '';

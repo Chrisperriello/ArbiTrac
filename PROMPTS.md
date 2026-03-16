@@ -89,3 +89,15 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 - Remove all firebase stuff, this needs a complete overhaul
 - Go through the entire code base and make sure everything that has firebase api keys are in git ignore 
 - Go through the entire project and update the readme.md
+
+3/15
+-  Now reveiw yourself on firebase and the firebase_options.dart file  
+- Continue to Phase 3
+
+3/16
+
+- read step 3.1.1 and read the codebase and assess next steps for
+  integration 
+- Lets continue with implmentation 
+- If you are done with 3.1.1 check it off in requirements 
+- continue to 3.1.2 

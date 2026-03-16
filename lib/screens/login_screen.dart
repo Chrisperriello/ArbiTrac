@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../providers/providers.dart';
+import '../services/services.dart';
 import 'dashboard_screen.dart';
 
 //Stateful widget class
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   static const String routeName = '/login';
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   //Text controllers for username and password
   final _usernameController = TextEditingController();
@@ -32,19 +36,59 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final email = _usernameController.text.trim();
+    final password = _passwordController.text;
     FocusScope.of(context).unfocus();
     setState(() => _isSubmitting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      DashboardScreen.routeName,
-      (route) => false,
-      arguments: _usernameController.text.trim(),
-    );
-    if (mounted) {
-      setState(() => _isSubmitting = false);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final userProfileService = ref.read(userProfileServiceProvider);
+      final credential = await authService.signInWithEmail(
+        email: email,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) {
+        throw const AuthServiceException('Login failed. Please try again.');
+      }
+
+      String displayName = email;
+      try {
+        displayName = await userProfileService.loadDisplayName(
+          uid: user.uid,
+          fallbackEmail: user.email ?? email,
+        );
+      } on FirebaseException {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Logged in, but user profile data could not be refreshed right now.',
+              ),
+            ),
+          );
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        DashboardScreen.routeName,
+        (route) => false,
+        arguments: displayName,
+      );
+    } on AuthServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 

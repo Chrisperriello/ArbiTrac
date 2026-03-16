@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'core/config/app_config.dart';
+import 'firebase_options.dart';
 import 'screens/screens.dart';
 import 'theme.dart';
 
@@ -8,6 +10,7 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.load();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const ProviderScope(child: MainApp()));
 }
 
@@ -18,14 +21,12 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: AppTheme.lightTheme,
-      initialRoute: MainScreen.routeName,
       routes: {
         //Routes for the main pages
         MainScreen.routeName: (_) => const MainScreen(), //Main screen
         LoginScreen.routeName: (_) => const LoginScreen(), //Login Screen
         SignUpScreen.routeName: (_) => const SignUpScreen(), // Signup Screen
-        DashboardScreen.routeName: (_) =>
-            const DashboardScreen(), // Dashboard screen
+        DashboardScreen.routeName: (_) => const DashboardScreen(),
       },
     );
   }
