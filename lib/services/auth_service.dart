@@ -34,6 +34,26 @@ class AuthService {
     }
   }
 
+  Future<UserCredential> signUpWithEmail({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final credential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      if (credential.user == null) {
+        throw const AuthServiceException(
+          'Sign up failed. Please try again in a moment.',
+        );
+      }
+      return credential;
+    } on FirebaseAuthException catch (error) {
+      throw AuthServiceException(_mapSignUpError(error.code));
+    }
+  }
+
   String _mapSignInError(String code) {
     switch (code) {
       case 'invalid-credential':
@@ -48,6 +68,23 @@ class AuthService {
         return 'Too many attempts. Please wait a moment and try again.';
       default:
         return 'Login failed. Please try again.';
+    }
+  }
+
+  String _mapSignUpError(String code) {
+    switch (code) {
+      case 'email-already-in-use':
+        return 'An account with this email already exists. Try logging in instead.';
+      case 'invalid-email':
+        return 'Please enter a valid email address.';
+      case 'weak-password':
+        return 'Password is too weak. Use at least 8 characters and a special character.';
+      case 'operation-not-allowed':
+        return 'Email/password sign up is currently unavailable.';
+      case 'too-many-requests':
+        return 'Too many attempts. Please wait a moment and try again.';
+      default:
+        return 'Sign up failed. Please try again.';
     }
   }
 }

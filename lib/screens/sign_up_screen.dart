@@ -1,17 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../providers/providers.dart';
+import '../services/services.dart';
 import 'dashboard_screen.dart';
 
-class SignUpScreen extends StatefulWidget {
+class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
 
   static const String routeName = '/sign-up';
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  ConsumerState<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   //Controllers
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
@@ -34,19 +38,62 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final email = _usernameController.text.trim();
+    final password = _passwordController.text;
     FocusScope.of(context).unfocus();
     setState(() => _isSubmitting = true);
-    await Future<void>.delayed(const Duration(milliseconds: 150));
-    if (!mounted) {
-      return;
-    }
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      DashboardScreen.routeName,
-      (route) => false,
-      arguments: _usernameController.text.trim(),
-    );
-    if (mounted) {
-      setState(() => _isSubmitting = false);
+
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final userProfileService = ref.read(userProfileServiceProvider);
+      //Sign up 
+      final credential = await authService.signUpWithEmail(
+        email: email,
+        password: password,
+      );
+      final user = credential.user;
+      if (user == null) {
+        throw const AuthServiceException('Sign up failed. Please try again.');
+      }
+
+      String displayName = user.email ?? email;
+      try {
+        displayName = await userProfileService.initializeForNewUser(
+          uid: user.uid,
+          email: user.email ?? email,
+        );
+      } on FirebaseException{
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Account created, but profile data could not be saved right now.',
+              ),
+            ),
+          );
+        }
+      }
+
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        DashboardScreen.routeName,
+        (route) => false,
+        arguments: displayName,
+      );
+    } on AuthServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 

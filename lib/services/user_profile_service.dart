@@ -36,6 +36,25 @@ class UserProfileService {
     return fallback;
   }
 
+  Future<String> initializeForNewUser({
+    required String uid,
+    required String email,
+  }) async {
+    final normalizedEmail = email.trim();
+    final fallbackDisplayName = normalizedEmail.isEmpty
+        ? 'Guest User'
+        : normalizedEmail;
+    await _firestore.collection('users').doc(uid).set({
+      'email': normalizedEmail,
+      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = '$_cacheKeyPrefix$uid';
+    await prefs.setString(cacheKey, fallbackDisplayName);
+    return fallbackDisplayName;
+  }
+
   String? _extractDisplayName(Map<String, dynamic>? data) {
     if (data == null) {
       return null;
