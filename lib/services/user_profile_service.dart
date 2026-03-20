@@ -55,6 +55,34 @@ class UserProfileService {
     return fallbackDisplayName;
   }
 
+  Future<void> updateUsername({
+    required String uid,
+    required String username,
+  }) async {
+    final trimmed = username.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('Username cannot be empty.');
+    }
+
+    // Using set(merge: true) creates the document if it doesn't exist
+    await _firestore.collection('users').doc(uid).set({
+      'username': trimmed,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    final prefs = await SharedPreferences.getInstance();
+    final cacheKey = '$_cacheKeyPrefix$uid';
+    await prefs.setString(cacheKey, trimmed);
+  }
+
+  Future<bool> hasUsername(String uid) async {
+    final snapshot = await _firestore.collection('users').doc(uid).get();
+    final data = snapshot.data();
+    if (data == null) return false;
+    final username = data['username'] as String?;
+    return username != null && username.trim().isNotEmpty;
+  }
+
   String? _extractDisplayName(Map<String, dynamic>? data) {
     if (data == null) {
       return null;
