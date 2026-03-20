@@ -101,3 +101,15 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
 - Lets continue with implmentation 
 - If you are done with 3.1.1 check it off in requirements 
 - continue to 3.1.2 
+
+3/18
+- Begin with step 3.1.3   
+- do flutter compile test and see the error    
+- Everytime I hit the signup with google button in the sign up it says              
+   "Unexpected error occured with google sign in"    
+- do flutter anayliss there is an error
+- UnImplmeted error, autheticate is not supported on the web instead use a          
+   render button insted - is the error that i get for refrence: Web:                 
+   The signInWithPopup method is supported on web platforms, but you must ensure     
+   all authorized domains are registered in both the Google Cloud Project and        
+   Firebase Auth consoles.     

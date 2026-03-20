@@ -164,10 +164,10 @@ status).
         - If valid login and bring them to the main dashboard
         - Also start the load of any data from the cloud or local data needed to represent that specific user
         - Implemented Firebase email/password account creation with bottom `SnackBar` error feedback and success routing to dashboard
-    - [ ] __Step 3.1.3: Google__
+    - [x] __Step 3.1.3: Google__
         - Alternativley have the sign up page have a google sign up button that uses the firebase Auth google plugin to create or sign up for an account
         - Implemented Google sign-in button on Sign Up screen and Firebase credential-based sign-in flow
-    - [ ] __Step 3.1.4: Username__
+    - [x] __Step 3.1.4: Username__
         - IF it is the first time that this has been logged in then we need to allow the person to select a Username and store it in the database for display reasons 
         - Create a new screen called UsernameScreen widget class that is a new screen that allows the person to enter in text that will be their username, then store it to the firebase database
 
