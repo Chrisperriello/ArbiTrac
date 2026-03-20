@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../providers/providers.dart';
 import '../services/services.dart';
-import 'dashboard_screen.dart';
+import 'username_screen.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
   const SignUpScreen({super.key});
@@ -57,9 +57,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         throw const AuthServiceException('Sign up failed. Please try again.');
       }
 
-      String displayName = user.email ?? email;
       try {
-        displayName = await userProfileService.initializeForNewUser(
+        await userProfileService.initializeForNewUser(
           uid: user.uid,
           email: user.email ?? email,
         );
@@ -79,14 +78,60 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         return;
       }
       Navigator.of(context).pushNamedAndRemoveUntil(
-        DashboardScreen.routeName,
+        UsernameScreen.routeName,
         (route) => false,
-        arguments: displayName,
       );
     } on AuthServiceException catch (error) {
       if (!mounted) {
         return;
       }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final userProfileService = ref.read(userProfileServiceProvider);
+      final credential = await authService.signInWithGoogle();
+      final user = credential.user;
+      if (user == null) {
+        throw const AuthServiceException(
+          'Google Sign-in failed. Please try again.',
+        );
+      }
+
+      try {
+        await userProfileService.initializeForNewUser(
+          uid: user.uid,
+          email: user.email ?? '',
+        );
+      } on FirebaseException {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Signed in, but profile data could not be initialized.',
+              ),
+            ),
+          );
+        }
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        UsernameScreen.routeName,
+        (route) => false,
+      );
+    } on AuthServiceException catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
@@ -168,6 +213,23 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                             ? 'Creating Account...'
                             : 'Create Account',
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('OR'),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _isSubmitting ? null : _signInWithGoogle,
+                      icon: const Icon(Icons.login),
+                      label: const Text('Sign up with Google'),
                     ),
                   ],
                 ),

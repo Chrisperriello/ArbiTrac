@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
 import 'dashboard_screen.dart';
+import 'username_screen.dart';
 
 //Stateful widget class
 class LoginScreen extends ConsumerStatefulWidget {
@@ -52,6 +53,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         throw const AuthServiceException('Login failed. Please try again.');
       }
 
+      final hasUsername = await userProfileService.hasUsername(user.uid);
+      if (!mounted) return;
+
+      if (!hasUsername) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          UsernameScreen.routeName,
+          (route) => false,
+        );
+        return;
+      }
+
       String displayName = email;
       try {
         displayName = await userProfileService.loadDisplayName(
@@ -82,6 +94,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) {
         return;
       }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isSubmitting = true);
+    try {
+      final authService = ref.read(authServiceProvider);
+      final userProfileService = ref.read(userProfileServiceProvider);
+      final credential = await authService.signInWithGoogle();
+      final user = credential.user;
+      if (user == null) {
+        throw const AuthServiceException(
+          'Google Sign-in failed. Please try again.',
+        );
+      }
+
+      final hasUsername = await userProfileService.hasUsername(user.uid);
+      if (!mounted) return;
+
+      if (!hasUsername) {
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          UsernameScreen.routeName,
+          (route) => false,
+        );
+        return;
+      }
+
+      String displayName = user.displayName ?? user.email ?? 'User';
+      try {
+        // Try to load existing profile, otherwise initialize for new user
+        displayName = await userProfileService.loadDisplayName(
+          uid: user.uid,
+          fallbackEmail: user.email ?? '',
+        );
+      } catch (e) {
+        // If profile doesn't exist, initialize it
+        try {
+          displayName = await userProfileService.initializeForNewUser(
+            uid: user.uid,
+            email: user.email ?? '',
+          );
+        } catch (_) {}
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        DashboardScreen.routeName,
+        (route) => false,
+        arguments: displayName,
+      );
+    } on AuthServiceException catch (error) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
@@ -154,6 +225,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ElevatedButton(
                       onPressed: _isSubmitting ? null : _submit,
                       child: Text(_isSubmitting ? 'Logging in...' : 'Login'),
+                    ),
+                    const SizedBox(height: 24),
+                    const Row(
+                      children: [
+                        Expanded(child: Divider()),
+                        Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: Text('OR'),
+                        ),
+                        Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton.icon(
+                      onPressed: _isSubmitting ? null : _signInWithGoogle,
+                      icon: const Icon(Icons.login),
+                      label: const Text('Login with Google'),
                     ),
                   ],
                 ),
