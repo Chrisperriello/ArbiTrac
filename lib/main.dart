@@ -14,6 +14,10 @@ Future<void> main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
 
+
+
+
+
   
 
   // Initialize Google Sign In for version 7.x
@@ -31,9 +35,9 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: AppTheme.lightTheme,
+      home: const AuthGate(),
       routes: {
         //Routes for the main pages
-        MainScreen.routeName: (_) => const MainScreen(), //Main screen
         LoginScreen.routeName: (_) => const LoginScreen(), //Login Screen
         SignUpScreen.routeName: (_) => const SignUpScreen(), // Signup Screen
         DashboardScreen.routeName: (_) => const DashboardScreen(),

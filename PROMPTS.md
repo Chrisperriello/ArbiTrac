@@ -113,3 +113,26 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
    The signInWithPopup method is supported on web platforms, but you must ensure     
    all authorized domains are registered in both the Google Cloud Project and        
    Firebase Auth consoles.     
+- Now for the username it says that it failed to save becuase of             
+   insufficent permissions    
+- failed to save username is now the error no document to update  
+- Give me the sign out workflow, we should never have a "guest user" if there is a sign out then it must  
+   leave back to the main_screen.dart  
+- Now look at requirements and see what is next 
+-  Continue to 3.3.1 
+- Tell me the entire 3.3.1 plan 
+- Do you understand how the OddsAPI works 
+- Now do you understand the point of api call conservation, we store these api pulls locally so that we do not refresh super quickly adn use
+  all our tokens, In the end we can control the refresh rate on the api through the UI and also give our own api keys but I want to make sure
+  you understand that
+  - No you did it wrong, the data comes from oddsAPI not from firebase, once we pull it we store it (probably locally) thats not what you did 
+  - The fallback should not be mock data, mock data is useless, just use either stored data or the api clal 
+  - OKAY THIS IS IMPORTANT AND I WANT TO MAKE SURE FOR TESTING how do i set how often the api key calls refresh, calalcuate the number call and
+  amke sure i dont overload my key instantly on start up 
+
+  3/26
+  -  Right now I want you to explore the api calls all it is giving is futures but I want the outlined
+  h2h,
+     spreads, ect 
+
+     

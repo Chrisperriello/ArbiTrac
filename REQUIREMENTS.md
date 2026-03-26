@@ -171,7 +171,7 @@ status).
         - IF it is the first time that this has been logged in then we need to allow the person to select a Username and store it in the database for display reasons 
         - Create a new screen called UsernameScreen widget class that is a new screen that allows the person to enter in text that will be their username, then store it to the firebase database
 
-- [ ] __Step 3.2: The Auth Gate__
+- [x] __Step 3.2: The Auth Gate__
     - Create an AuthGate widget that listens to the firebase auth state stream
     - if user == null, show LoginScreen. Else, show MVP screen.
     - Logout Lofic: Implement the functionality for the "Sign out" button defined in Phase 2.2.1
@@ -179,15 +179,15 @@ status).
 
 - [ ] __Step 3.3: Cloud Database Integration__
     
-    - __Step 3.3.1: Live odds integration__
+    - [ ] __Step 3.3.1: Live odds integration__
         - Replace mock_data.dart with a firestore stream in OddsApiService
         - Connec the Live opportunity list (2.2.2) to a stream provider
 
-    - __Step 3.3.2: Sorting and Filtering Logic__:
+    - [ ] __Step 3.3.2: Sorting and Filtering Logic__:
 
         - Implement the functional logic for the "Highest Profit" and "Soonest Payout" sorting ehaders creaded in Phase 2
 
-    - __Step 3.3.4: Favorites Cloud Sync__:
+    - [ ] __Step 3.3.3: Favorites Cloud Sync__:
         - Upgrade Phase 2.4 (Watchlist). Instead of only shared_preferences, sync favorited games to the users firestore document so they persist across devices
 
 - [ ] __Step 3.4: Manuel Arb Calculator Logic__
