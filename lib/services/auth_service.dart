@@ -19,6 +19,19 @@ class AuthService {
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
 
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  Future<void> signOut() async {
+    try {
+      await _googleSignIn.signOut();
+      await _auth.signOut();
+    } on FirebaseAuthException catch (error) {
+      throw AuthServiceException(_mapSignOutError(error.code));
+    } catch (_) {
+      throw const AuthServiceException('Sign out failed. Please try again.');
+    }
+  }
+
   Future<UserCredential> signInWithGoogle() async {
     try {
       if (kIsWeb) {
@@ -135,6 +148,15 @@ class AuthService {
         return 'Too many attempts. Please wait a moment and try again.';
       default:
         return 'Sign up failed. Please try again.';
+    }
+  }
+
+  String _mapSignOutError(String code) {
+    switch (code) {
+      case 'network-request-failed':
+        return 'Sign out failed due to network issues. Please try again.';
+      default:
+        return 'Sign out failed. Please try again.';
     }
   }
 }
