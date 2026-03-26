@@ -180,17 +180,18 @@ status).
 - [ ] __Step 3.3: Cloud Database Integration__
     
     - [ ] __Step 3.3.1: Live odds integration__
-        - Replace mock_data.dart with a firestore stream in OddsApiService
-        - Connec the Live opportunity list (2.2.2) to a stream provider
+        - Replace mock_data.dart with API-backed local odds storage/cache in OddsApiService
+        - Keep live odds local on-device and refresh them from the API on an interval
+        - Connect the Live opportunity list (2.2.2) to the refreshed local/API stream provider
 
-    - [ ] __Step 3.3.2: Sorting and Filtering Logic__:
+    - [x] __Step 3.3.2: Sorting and Filtering Logic__:
 
         - Implement the functional logic for the "Highest Profit" and "Soonest Payout" sorting ehaders creaded in Phase 2
 
     - [ ] __Step 3.3.3: Favorites Cloud Sync__:
         - Upgrade Phase 2.4 (Watchlist). Instead of only shared_preferences, sync favorited games to the users firestore document so they persist across devices
 
-- [ ] __Step 3.4: Manuel Arb Calculator Logic__
+- [x] __Step 3.4: Manuel Arb Calculator Logic__
     - Connect the ArbEngine (Phae 1.4) to the UI fields from Phase 2.3
     - Ensure the "Total Investment" field updates teh "Required Stakes" dynamically as the user tpyes (using a StateProvider)
 

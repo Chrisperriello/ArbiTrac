@@ -1,228 +1,85 @@
-# ArbiTrac
+# 🎯 ArbiTrac: Professional Arbitrage Betting Automation
 
-ArbiTrac is a Flutter app that helps bettors find and evaluate arbitrage opportunities across sportsbooks.
+**ArbiTrac** is a high-precision, real-time analytics engine designed for professional bettors to identify, calculate, and execute arbitrage opportunities across global sportsbooks. Built with Flutter and powered by a custom mathematical engine, ArbiTrac eliminates the guesswork from "sure-bet" strategies.
 
-At a high level, the app ingests sportsbook odds, identifies markets where the combined implied probability is below 100%, and shows exactly how to split a bankroll across outcomes to lock in a theoretical profit.
+---
 
-## What the app does
+## 🚀 Key Features
 
-ArbiTrac is built around three core user jobs:
+### 📡 Real-Time Opportunity Discovery
+*   **Live Odds Engine:** Continuous integration with **The Odds API** providing updates on Moneyline (H2H), Spreads, Totals, and Outrights.
+*   **Precision Filtering:** Pin your favorite sports and books to cut through the noise and focus on the markets that matter to you.
+*   **Freshness Indicators:** Real-time pulse icons and timers show exactly how many seconds ago a line was updated, ensuring you never chase stale odds.
 
-- Discover arbitrage opportunities quickly
-- Validate stake allocation before placing bets
-- Track the games/sports you care about while lines update
+### 🧮 Advanced Mathematical Validation
+*   **High-Precision Math:** Built using the `decimal` and `rational` packages to avoid the floating-point errors that can lead to losses in high-stakes betting.
+*   **Multi-Leg Support:** A flexible manual calculator that supports 2-leg and 3-leg arbitrage scenarios.
+*   **Smart Stake Allocation:** Automatically calculates the exact investment required for each leg to guarantee a profit regardless of the outcome.
 
-The app currently supports these market types in the opportunity pipeline:
+### 👤 Seamless User Experience
+*   **Unified Dashboard:** A single pane of glass for discovering, searching, and sorting opportunities by profit margin or payout speed.
+*   **Search & Discovery:** Instant lookup for games, sportsbooks, and specific markets using a high-performance `SearchDelegate`.
+*   **Deep-Dive Analysis:** Drill down into any event to see all reported odds across every bookmaker in the market.
 
-- Moneyline (`h2h`)
-- Spreads (`spreads`)
-- Totals (`totals`)
-- Outrights (`outrights`)
+---
 
-## Current user experience
+## 🧠 The "Math Behind the Magic"
 
-### 1) Entry + auth screens (UI flow)
+ArbiTrac doesn't just "guess." It uses a rigorous mathematical approach:
 
-- Main screen provides `Login` and `Sign Up` entry points
-- Login and Sign Up forms are implemented as screen flows
-- Successful submit currently routes to dashboard UI flow
+1.  **Implied Probability Check:** For any set of outcomes, the system calculates $P = \sum \frac{1}{Decimal Odds_i}$.
+2.  **Detection:** If $P < 1$, an arbitrage opportunity exists.
+3.  **Optimal Execution:** The system solves for $S_i = \frac{T}{P \times Decimal Odds_i}$, where $T$ is your total investment, ensuring identical payouts across all outcomes.
 
-### 2) Dashboard (core surface)
+---
 
-The dashboard is the operational center of the app. It includes:
+## 🛠️ Technical Excellence
 
-- Live opportunity list (from current data source)
-- Sort controls:
-  - Highest profit
-  - Soonest payout
-- Odds freshness indicator (`Updated Xs ago`)
-- Pinned favorites (watchlist behavior)
-- Pinned-sport filtering chips
-- Search icon with `SearchDelegate` game/market/book lookup
-- Manual Arb Calculator card (expandable)
+*   **Frontend:** Flutter & Material 3 for a modern, responsive UI.
+*   **State Management:** **Riverpod** for a robust, reactive, and testable data flow.
+*   **Backend:** **Firebase Auth** (Email & Google) and **Cloud Firestore** for secure profile management and real-time data syncing.
+*   **Resilience:** Advanced local caching with `SharedPreferences` to maximize performance and minimize API token consumption.
+*   **Architecture:** Clean, layered architecture separating core math logic, data services, and UI components.
 
-Each opportunity card includes:
+---
 
-- Event name
-- Sport
-- Two sportsbooks used for best-leg prices
-- Arb margin (`Arb %`)
-- Market label
-- Pin/unpin control
+## 🛤️ Product Roadmap
 
-### 3) Event detail screen
+### 🟡 Now: The MVP Core
+*   [x] Real-time opportunity extraction from Live API.
+*   [x] Precision math engine for 2-way and 3-way arbs.
+*   [x] Manual calculator for custom scenarios.
+*   [x] Local persistence for watchlists and pinned sports.
+*   [x] Firebase Authentication (Email/Google).
 
-Tapping an opportunity opens detailed market data:
+### 🔵 Soon: Phase 3 Integration
+*   **Cloud Syncing:** Seamlessly sync your pinned games and sports across all your devices via Firestore.
+*   **Push Notifications:** Get alerted the instant a high-margin (>3%) opportunity is detected.
+*   **Expanded Markets:** Support for 3-way markets (Soccer/Draw) and player props.
 
-- Team/event metadata and start time
-- Market selector (Moneyline/Spread/Total/Outright when available)
-- Bookmaker-by-bookmaker outcome odds
-- Per-opportunity investment planner:
-  - Enter total investment
-  - See suggested stake split
-  - View guaranteed payout and net profit estimate
+### 🟢 Future: Professional Suite
+*   **Risk Management Tools:** Track your actual P&L and account for sportsbook limits and "limit" warnings.
+*   **Custom API Keys:** Allow power users to plug in their own Odds API or Betradar keys for ultra-low latency.
+*   **One-Tap Execution:** Deep-linking directly to sportsbook bet-slips (where supported).
 
-### 4) Manual Arb Calculator
+---
 
-The calculator supports both:
-
-- Decimal odds input
-- American odds input with explicit `+/-` sign selectors
-
-Output includes:
-
-- Arbitrage sum value
-- Profitability status
-- Stake recommendation per leg
-- Guaranteed payout
-- Net profit
-
-## How ArbiTrac detects arbitrage
-
-Core math lives in `lib/core/utils/arb_engine.dart` and uses `Decimal` + `Rational` for precision-safe calculations (avoids floating point drift).
-
-### Detection rule
-
-For odds legs `o1..on`:
-
-- Implied probability per leg: `Pi = 1 / oi`
-- Arbitrage exists when: `sum(Pi) < 1`
-
-### Stake allocation
-
-For total investment `T`, each leg stake is proportionally allocated so payouts converge, producing a near-equal return profile across outcomes.
-
-## Data pipeline (current implementation)
-
-Current odds flow:
-
-`mock_data.dart` -> `OddsApiService` -> Riverpod providers -> Dashboard/Event UI
-
-`OddsApiService` responsibilities:
-
-- Normalize incoming prices (including American -> Decimal conversion)
-- Cache payloads via `shared_preferences` (default 5-minute TTL)
-- Filter by sport key when needed
-
-This keeps the UI responsive during iteration and preserves API tokens while live integration is still being wired.
-
-## Persistence behavior
-
-- Pinned opportunities: persisted locally with `shared_preferences`
-- Pinned sports: persisted locally with `shared_preferences`
-- Secure token storage service scaffold exists in `secure_storage_service.dart`
-
-## Project structure
-
-```text
-lib/
-  core/
-    config/app_config.dart
-    constants/mock_data.dart
-    utils/arb_engine.dart
-  models/
-    arb_opportunity.dart
-    sports_event_detail.dart
-  services/
-    odds_api_service.dart
-    watchlist_service.dart
-    secure_storage_service.dart
-  providers/
-    providers.dart
-  screens/
-    main_screen.dart
-    login_screen.dart
-    sign_up_screen.dart
-    dashboard_screen.dart
-    sports_event_detail_screen.dart
-  widgets/
-    manual_arb_calculator_card.dart
-  theme.dart
-  main.dart
-```
-
-## Tech stack
-
-- Flutter + Dart
-- Material 3 UI
-- `flutter_riverpod` state management
-- `decimal` / `rational` for odds and stake math
-- `shared_preferences` local persistence
-- `flutter_secure_storage` sensitive local storage
-- `flutter_dotenv` env/config loading
-- `firebase_core` + FlutterFire config files (foundation for auth/cloud integration)
-
-## Setup
+## 🏁 Getting Started
 
 ### Prerequisites
+- Flutter SDK (Stable)
+- A `.env` file containing your `ODDS_API_KEY`.
 
-- Flutter SDK (stable channel)
-- Platform toolchains (Android Studio / Xcode as needed)
+### Installation
+1.  Clone the repository.
+2.  Run `flutter pub get`.
+3.  Configure Firebase using `flutterfire configure`.
+4.  Execute `flutter run`.
 
-### Install
+---
 
-```bash
-flutter pub get
-```
+## ⚖️ Legal & Risk
+ArbiTrac is an analytics and tracking tool. Users are responsible for ensuring compliance with local gambling laws and sportsbook Terms of Service. Arbitrage betting involves execution risk (lines moving before both bets are placed); ArbiTrac provides the data, but the user manages the execution.
 
-### Environment variables
-
-Create a root `.env` file:
-
-```bash
-ODDS_API_KEY=your_odds_api_key
-```
-
-Loaded via `lib/core/config/app_config.dart`.
-
-### Firebase configuration
-
-If working on cloud/auth paths, run:
-
-```bash
-flutterfire configure
-```
-
-This generates platform Firebase config files and `lib/firebase_options.dart`.
-
-### Run
-
-```bash
-flutter run
-```
-
-## Useful commands
-
-```bash
-flutter run
-flutter analyze
-flutter test
-flutter build apk
-flutter build ios
-```
-
-## Security notes
-
-- Never hard-code API keys or tokens in source.
-- Keep secrets in `.env` and Firebase config files.
-- Sensitive Firebase/env files are covered by `.gitignore`.
-- If a secret is ever committed, rotate it immediately.
-
-## What is implemented vs pending
-
-Implemented now:
-
-- Dashboard opportunity discovery and sorting
-- Manual calculator with Decimal/American support
-- Search and detail drill-down
-- Local favorites and pinned-sport persistence
-
-Still being finalized:
-
-- Firebase Auth gate and session routing
-- Firestore stream as live data source
-- Cross-device cloud sync for favorites/watchlists
-
-## Important reminder
-
-ArbiTrac is an analytics/tracking tool. Users are responsible for legal compliance, sportsbook terms, and execution risk in their region.
+---
+*Developed by CJ Perriello*
