@@ -1,4 +1,5 @@
 import 'package:decimal/decimal.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:rational/rational.dart';
@@ -24,6 +25,22 @@ final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
 });
 
+final authStateChangesProvider = StreamProvider<User?>((ref) {
+  final authService = ref.watch(authServiceProvider);
+  return authService.authStateChanges;
+});
+
+final currentUserDisplayNameProvider = FutureProvider<String>((ref) async {
+  final user = ref.watch(authStateChangesProvider).value;
+  if (user == null) throw Exception('No user logged in');
+
+  final userProfileService = ref.watch(userProfileServiceProvider);
+  return userProfileService.loadDisplayName(
+    uid: user.uid,
+    fallbackEmail: user.email ?? '',
+  );
+});
+
 final availableSportsByKeyProvider =
     FutureProvider.autoDispose<Map<String, String>>((ref) async {
       final service = ref.watch(oddsApiServiceProvider);
@@ -40,14 +57,11 @@ final availableSportsByKeyProvider =
       return byKey;
     });
 
-//Async Provider, that will give data in the future
-final rawOddsProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((
+final rawOddsProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((
   ref,
-) async {
-  //Waits for the provider to give out data
+) {
   final service = ref.watch(oddsApiServiceProvider);
-  //Returns the odds
-  return service.fetchOdds();
+  return service.watchOdds();
 });
 
 final selectedMarketKeyProvider = StateProvider.autoDispose
@@ -56,17 +70,22 @@ final selectedMarketKeyProvider = StateProvider.autoDispose
 final opportunityInvestmentInputProvider = StateProvider.autoDispose
     .family<String, String>((ref, opportunityId) => '');
 
-final sportsEventDetailProvider = FutureProvider.autoDispose
-    .family<SportsEventDetail?, String>((ref, eventId) async {
-      final events = await ref.watch(rawOddsProvider.future);
-      for (final event in events) {
-        final id = event['id'] as String? ?? '';
-        if (id != eventId) {
-          continue;
+final sportsEventDetailProvider =
+    Provider.autoDispose.family<AsyncValue<SportsEventDetail?>, String>((
+      ref,
+      eventId,
+    ) {
+      final eventsAsync = ref.watch(rawOddsProvider);
+      return eventsAsync.whenData((events) {
+        for (final event in events) {
+          final id = event['id'] as String? ?? '';
+          if (id != eventId) {
+            continue;
+          }
+          return _toSportsEventDetail(event);
         }
-        return _toSportsEventDetail(event);
-      }
-      return null;
+        return null;
+      });
     });
 
 //Sttragety enums
@@ -265,23 +284,21 @@ final manualArbCalculatorProvider =
 
 // Provides all of the arb opportunities
 final arbOpportunitiesProvider =
-    FutureProvider.autoDispose<List<ArbOpportunity>>((ref) async {
-      // get the odds
-      final oddsPayload = await ref.watch(rawOddsProvider.future);
-      //extract the opportunites
-      final opportunities = _extractArbOpportunities(oddsPayload);
-      //Sort option
+    Provider.autoDispose<AsyncValue<List<ArbOpportunity>>>((ref) {
+      final oddsAsync = ref.watch(rawOddsProvider);
       final sortOption = ref.watch(dashboardSortOptionProvider);
-
-      opportunities.sort((a, b) {
-        switch (sortOption) {
-          case DashboardSortOption.highestProfit:
-            return b.profitMarginPercent.compareTo(a.profitMarginPercent);
-          case DashboardSortOption.soonestPayout:
-            return a.commenceTime.compareTo(b.commenceTime);
-        }
+      return oddsAsync.whenData((oddsPayload) {
+        final opportunities = _extractArbOpportunities(oddsPayload);
+        opportunities.sort((a, b) {
+          switch (sortOption) {
+            case DashboardSortOption.highestProfit:
+              return b.profitMarginPercent.compareTo(a.profitMarginPercent);
+            case DashboardSortOption.soonestPayout:
+              return a.commenceTime.compareTo(b.commenceTime);
+          }
+        });
+        return opportunities;
       });
-      return opportunities;
     });
 
 //This function is for actually extracting the opportunites
