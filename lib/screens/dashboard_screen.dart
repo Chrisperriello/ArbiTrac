@@ -6,21 +6,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../services/services.dart';
 import '../widgets/widgets.dart';
 import 'main_screen.dart';
 import 'sports_event_detail_screen.dart';
 
 //Dashboard Screen
-class DashboardScreen extends ConsumerWidget {
+class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
 
   //Route name
   static const String routeName = '/dashboard';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final username =
-        (ModalRoute.of(context)?.settings.arguments as String?) ?? 'Guest User';
+  ConsumerState<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  bool _showAllSports = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
+    final usernameAsync = ref.watch(currentUserDisplayNameProvider);
     final sortOption = ref.watch(dashboardSortOptionProvider);
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
     final favoritesAsync = ref.watch(favoriteOpportunityIdsProvider);
@@ -42,7 +50,7 @@ class DashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         leading: PopupMenuButton<String>(
           tooltip: 'Account',
-          onSelected: (value) {
+          onSelected: (value) async {
             if (value == 'settings') {
               //App bar popup depeneding on the input this is settings
               ScaffoldMessenger.of(context).showSnackBar(
@@ -52,17 +60,40 @@ class DashboardScreen extends ConsumerWidget {
               );
             }
             if (value == 'signout') {
-              Navigator.of(
-                context,
-              ).pushNamedAndRemoveUntil(MainScreen.routeName, (route) => false);
+              final authService = ref.read(authServiceProvider);
+              try {
+                await authService.signOut();
+                if (!context.mounted) {
+                  return;
+                }
+                Navigator.of(context).pushNamedAndRemoveUntil(
+                  MainScreen.routeName,
+                  (route) => false,
+                );
+              } on AuthServiceException catch (error) {
+                if (!context.mounted) {
+                  return;
+                }
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(error.message)),
+                );
+              }
             }
           },
           itemBuilder: (context) => [
             PopupMenuItem<String>(
               enabled: false,
-              child: Text(
-                username,
-                style: Theme.of(context).textTheme.titleMedium,
+              child: usernameAsync.when(
+                data: (username) => Text(
+                  username,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                loading: () => const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                error: (_, stackTrace) => const Text('User'),
               ),
             ),
             const PopupMenuItem<String>(
@@ -140,14 +171,23 @@ class DashboardScreen extends ConsumerWidget {
             const SizedBox(height: 6),
             sportsByKeyAsync.when(
               data: (sportsByKey) {
-                final sportEntries = sportsByKey.entries.toList(growable: false)
-                  ..sort((a, b) => a.value.compareTo(b.value));
-                return Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: sportEntries
-                      .map(
-                        (entry) => FilterChip(
+                final sortedEntries = sportsByKey.entries.toList(growable: false)
+                  ..sort((a, b) {
+                    final aPinned = favoriteSportKeys.contains(a.key);
+                    final bPinned = favoriteSportKeys.contains(b.key);
+                    if (aPinned != bPinned) {
+                      return aPinned ? -1 : 1;
+                    }
+                    return a.value.compareTo(b.value);
+                  });
+                final visibleEntries = _showAllSports
+                    ? sortedEntries
+                    : sortedEntries.take(5).toList(growable: false);
+                final chips = visibleEntries
+                    .map(
+                      (entry) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
                           label: Text(entry.value),
                           selected: favoriteSportKeys.contains(entry.key),
                           onSelected: (_) async {
@@ -156,8 +196,31 @@ class DashboardScreen extends ConsumerWidget {
                                 .toggleFavoriteSport(entry.key);
                           },
                         ),
+                      ),
+                    )
+                    .toList(growable: false);
+                final canExpand = sortedEntries.length > 5;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (_showAllSports)
+                      SizedBox(
+                        height: 44,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          children: chips,
+                        ),
                       )
-                      .toList(growable: false),
+                    else
+                      Wrap(spacing: 0, runSpacing: 8, children: chips),
+                    if (canExpand)
+                      TextButton(
+                        onPressed: () {
+                          setState(() => _showAllSports = !_showAllSports);
+                        },
+                        child: Text(_showAllSports ? 'See less' : 'See more'),
+                      ),
+                  ],
                 );
               },
               loading: () => const Align(
