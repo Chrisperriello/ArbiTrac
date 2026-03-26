@@ -132,7 +132,15 @@ class FavoriteOpportunityIdsNotifier extends AsyncNotifier<Set<String>> {
   @override
   Future<Set<String>> build() async {
     final watchlistService = ref.watch(watchlistServiceProvider);
-    return watchlistService.loadFavoriteOpportunityIds();
+    final localIds = await watchlistService.loadFavoriteOpportunityIds();
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user == null) {
+      return localIds;
+    }
+    return watchlistService.loadSyncedFavoriteOpportunityIds(
+      uid: user.uid,
+      localIds: localIds,
+    );
   }
 
   Future<void> toggleFavorite(String opportunityId) async {
@@ -144,6 +152,14 @@ class FavoriteOpportunityIdsNotifier extends AsyncNotifier<Set<String>> {
     state = AsyncData(next);
     final watchlistService = ref.read(watchlistServiceProvider);
     await watchlistService.saveFavoriteOpportunityIds(next);
+    final user = ref.read(authStateChangesProvider).value;
+    if (user == null) {
+      return;
+    }
+    await watchlistService.saveFavoriteOpportunityIdsForUser(
+      uid: user.uid,
+      ids: next,
+    );
   }
 }
 
@@ -156,7 +172,15 @@ class FavoriteSportKeysNotifier extends AsyncNotifier<Set<String>> {
   @override
   Future<Set<String>> build() async {
     final watchlistService = ref.watch(watchlistServiceProvider);
-    return watchlistService.loadFavoriteSportKeys();
+    final localKeys = await watchlistService.loadFavoriteSportKeys();
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user == null) {
+      return localKeys;
+    }
+    return watchlistService.loadSyncedFavoriteSportKeys(
+      uid: user.uid,
+      localKeys: localKeys,
+    );
   }
 
   Future<void> toggleFavoriteSport(String sportKey) async {
@@ -168,6 +192,14 @@ class FavoriteSportKeysNotifier extends AsyncNotifier<Set<String>> {
     state = AsyncData(next);
     final watchlistService = ref.read(watchlistServiceProvider);
     await watchlistService.saveFavoriteSportKeys(next);
+    final user = ref.read(authStateChangesProvider).value;
+    if (user == null) {
+      return;
+    }
+    await watchlistService.saveFavoriteSportKeysForUser(
+      uid: user.uid,
+      keys: next,
+    );
   }
 }
 

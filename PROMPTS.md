@@ -134,5 +134,17 @@ Ensure the final output is valid JSON and uses realistic team names and betting 
   -  Right now I want you to explore the api calls all it is giving is futures but I want the outlined
   h2h,
      spreads, ect 
+     -This is all it returns this is from inspect application local data odd_api_cache_odds: <pasted_content
+file="/Users/chrisperriello/.copilot/session-state/2ece46b6-c631-4218-9fb7-e490facb54f1/files/paste-177
+4536051041.txt" size="47.4 KB" lines="1" />
 
-     
+- Check off all step requirments that have been done but not checked
+- Why is 3.3.1 and 3.3.3 not implemented yet explain fully 
+- Lets rewrite 3.3.1, odds should live locally and be refreshed by the api the firestore does nothing
+for that 
+- Now I do want favorites to be added to the firestore and code base 
+-  Bug fix plan it out: if i have already registerd an email on either the normal auth or the google auth
+  then i want it to return it to thre main screen and tell the user (on a pop up) that you need to sign
+  in throught the sign in (something like "alreadyed registerde go throgh sign up) so go to the sign up
+  pipeline and if we get that they are already signed up then route them to main screen and dispaly
+  popup 

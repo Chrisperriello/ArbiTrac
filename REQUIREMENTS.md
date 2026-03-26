@@ -179,7 +179,7 @@ status).
 
 - [ ] __Step 3.3: Cloud Database Integration__
     
-    - [ ] __Step 3.3.1: Live odds integration__
+    - [x] __Step 3.3.1: Live odds integration__
         - Replace mock_data.dart with API-backed local odds storage/cache in OddsApiService
         - Keep live odds local on-device and refresh them from the API on an interval
         - Connect the Live opportunity list (2.2.2) to the refreshed local/API stream provider
@@ -212,7 +212,15 @@ status).
     - Refacto any files that have grown too large 
     
 
-- [ ] __Step 5: Market__:
+- [ ] __Step 5: Market__(As of March 26, skip might come back):
     - This is if there is anytime left at all
 
     - Add different plug ins for different APIs that pull from markets and get JSON formatted data. This will allow users to put in their own api keys for services if they have them
+
+
+### Phase 5: Addtion 
+
+This section should be dated and also numbered for prioty (number removed once completed)
+
+- [ ] __5.1: API limitation calling__:
+    Purpose: If we are filtering 

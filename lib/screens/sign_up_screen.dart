@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../providers/providers.dart';
 import '../services/services.dart';
+import 'main_screen.dart';
 import 'username_screen.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,23 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     r'[!@#$%^&*(),.?":{}|<>_\-\\/\[\]`~+=;]',
   );
   bool _isSubmitting = false;
+
+  void _routeToMainWithExistingAccountMessage() {
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      MainScreen.routeName,
+      (route) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text(
+          'This account is already registered. Please sign in from Login.',
+        ),
+      ),
+    );
+  }
 
   //destroy all space
   @override
@@ -82,12 +100,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         (route) => false,
       );
     } on AuthServiceException catch (error) {
-      if (!mounted) {
-        return;
+      if (error.message.contains('already exists')) {
+        _routeToMainWithExistingAccountMessage();
+      } else {
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -106,6 +128,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         throw const AuthServiceException(
           'Google Sign-in failed. Please try again.',
         );
+      }
+      final isNewGoogleUser = credential.additionalUserInfo?.isNewUser ?? false;
+      if (!isNewGoogleUser) {
+        await authService.signOut();
+        _routeToMainWithExistingAccountMessage();
+        return;
       }
 
       try {
