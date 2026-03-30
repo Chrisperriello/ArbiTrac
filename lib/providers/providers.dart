@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:rational/rational.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
@@ -94,6 +95,27 @@ enum DashboardSortOption { highestProfit, soonestPayout }
 enum ManualArbOddsFormat { decimal, american }
 
 enum ManualArbAmericanSign { plus, minus }
+
+final appThemeModeProvider =
+    AsyncNotifierProvider<AppThemeModeNotifier, bool>(
+      AppThemeModeNotifier.new,
+    );
+
+class AppThemeModeNotifier extends AsyncNotifier<bool> {
+  static const String _themeModeDarkKey = 'app_theme_mode_dark_v1';
+
+  @override
+  Future<bool> build() async {
+    final preferences = await SharedPreferences.getInstance();
+    return preferences.getBool(_themeModeDarkKey) ?? false;
+  }
+
+  Future<void> setDarkMode(bool enabled) async {
+    state = AsyncData(enabled);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setBool(_themeModeDarkKey, enabled);
+  }
+}
 
 //Provider for the if the sort changes
 final dashboardSortOptionProvider = StateProvider<DashboardSortOption>((ref) {
