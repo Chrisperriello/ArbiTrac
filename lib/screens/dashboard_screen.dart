@@ -9,6 +9,7 @@ import '../providers/providers.dart';
 import '../services/services.dart';
 import '../widgets/widgets.dart';
 import 'main_screen.dart';
+import 'settings_screen.dart';
 import 'sports_event_detail_screen.dart';
 
 //Dashboard Screen
@@ -52,12 +53,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           tooltip: 'Account',
           onSelected: (value) async {
             if (value == 'settings') {
-              //App bar popup depeneding on the input this is settings
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Settings screen comes in a later step.'),
-                ),
-              );
+              Navigator.of(context).pushNamed(SettingsScreen.routeName);
+              return;
             }
             if (value == 'signout') {
               final authService = ref.read(authServiceProvider);

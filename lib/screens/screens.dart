@@ -5,3 +5,4 @@ export 'sign_up_screen.dart';
 export 'sports_event_detail_screen.dart';
 export 'username_screen.dart';
 export 'auth_gate.dart';
+export 'settings_screen.dart';
