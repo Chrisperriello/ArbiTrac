@@ -147,7 +147,7 @@ status).
 
 *Goal: Complete major functionality and replace mock data with live cloud and authentication.*
 
-- [ ] __Step 3.1: Main Screen__
+- [x] __Step 3.1: Main Screen__
     - Intergrate the main screen for the application
 
 
@@ -177,7 +177,7 @@ status).
     - Logout Lofic: Implement the functionality for the "Sign out" button defined in Phase 2.2.1
 
 
-- [ ] __Step 3.3: Cloud Database Integration__
+- [x] __Step 3.3: Cloud Database Integration__
     
     - [x] __Step 3.3.1: Live odds integration__
         - Replace mock_data.dart with API-backed local odds storage/cache in OddsApiService
@@ -188,7 +188,7 @@ status).
 
         - Implement the functional logic for the "Highest Profit" and "Soonest Payout" sorting ehaders creaded in Phase 2
 
-    - [ ] __Step 3.3.3: Favorites Cloud Sync__:
+    - [x] __Step 3.3.3: Favorites Cloud Sync__:
         - Upgrade Phase 2.4 (Watchlist). Instead of only shared_preferences, sync favorited games to the users firestore document so they persist across devices
 
 - [x] __Step 3.4: Manuel Arb Calculator Logic__
@@ -223,4 +223,4 @@ status).
 This section should be dated and also numbered for prioty (number removed once completed)
 
 - [ ] __5.1: API limitation calling__:
-    Purpose: If we are filtering 
+    Purpose: If we are filtering based on sports books and classes or 

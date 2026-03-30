@@ -148,3 +148,7 @@ for that
   in throught the sign in (something like "alreadyed registerde go throgh sign up) so go to the sign up
   pipeline and if we get that they are already signed up then route them to main screen and dispaly
   popup 
+
+
+3/30
+-  Okay implment 4.1 
