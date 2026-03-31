@@ -5,7 +5,7 @@ const List<Map<String, dynamic>> mockSportsResponse = [
     'title': 'NBA',
     'description': 'US Basketball',
     'active': true,
-    'has_outrights': false,
+    'has_outrights': true,
   },
   {
     'key': 'americanfootball_nfl',
@@ -68,6 +68,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
               {'name': 'Boston Celtics', 'price': -110, 'point': -4.5},
             ],
           },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -102, 'point': 228.5},
+              {'name': 'Under', 'price': -118, 'point': 228.5},
+            ],
+          },
         ],
       },
       {
@@ -87,6 +94,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
             'outcomes': [
               {'name': 'Los Angeles Lakers', 'price': -108, 'point': 5.0},
               {'name': 'Boston Celtics', 'price': -112, 'point': -5.0},
+            ],
+          },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -110, 'point': 228.5},
+              {'name': 'Under', 'price': -106, 'point': 228.5},
             ],
           },
         ],
@@ -119,6 +133,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
               {'name': 'Denver Nuggets', 'price': -110, 'point': -5.5},
             ],
           },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -105, 'point': 221.5},
+              {'name': 'Under', 'price': -115, 'point': 221.5},
+            ],
+          },
         ],
       },
       {
@@ -138,6 +159,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
             'outcomes': [
               {'name': 'Miami Heat', 'price': -108, 'point': 5.0},
               {'name': 'Denver Nuggets', 'price': -112, 'point': -5.0},
+            ],
+          },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -112, 'point': 221.5},
+              {'name': 'Under', 'price': -104, 'point': 221.5},
             ],
           },
         ],
@@ -170,6 +198,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
               {'name': 'Phoenix Suns', 'price': -110, 'point': -2.5},
             ],
           },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -108, 'point': 225.5},
+              {'name': 'Under', 'price': -112, 'point': 225.5},
+            ],
+          },
         ],
       },
       {
@@ -189,6 +224,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
             'outcomes': [
               {'name': 'Golden State Warriors', 'price': -108, 'point': 3.0},
               {'name': 'Phoenix Suns', 'price': -112, 'point': -3.0},
+            ],
+          },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -101, 'point': 225.5},
+              {'name': 'Under', 'price': -120, 'point': 225.5},
             ],
           },
         ],
@@ -221,6 +263,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
               {'name': 'New York Knicks', 'price': -110, 'point': -2.0},
             ],
           },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -114, 'point': 218.5},
+              {'name': 'Under', 'price': -104, 'point': 218.5},
+            ],
+          },
         ],
       },
       {
@@ -240,6 +289,13 @@ const List<Map<String, dynamic>> mockOddsResponse = [
             'outcomes': [
               {'name': 'Dallas Mavericks', 'price': -108, 'point': 2.5},
               {'name': 'New York Knicks', 'price': -112, 'point': -2.5},
+            ],
+          },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -102, 'point': 218.5},
+              {'name': 'Under', 'price': -118, 'point': 218.5},
             ],
           },
         ],
@@ -272,6 +328,20 @@ const List<Map<String, dynamic>> mockOddsResponse = [
               {'name': 'Buffalo Bills', 'price': -110, 'point': -1.5},
             ],
           },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -108, 'point': 48.5},
+              {'name': 'Under', 'price': -112, 'point': 48.5},
+            ],
+          },
+          {
+            'key': 'outrights',
+            'outcomes': [
+              {'name': 'Kansas City Chiefs AFC Winner', 'price': 240},
+              {'name': 'Buffalo Bills AFC Winner', 'price': 255},
+            ],
+          },
         ],
       },
       {
@@ -291,6 +361,20 @@ const List<Map<String, dynamic>> mockOddsResponse = [
             'outcomes': [
               {'name': 'Kansas City Chiefs', 'price': -108, 'point': 2.0},
               {'name': 'Buffalo Bills', 'price': -112, 'point': -2.0},
+            ],
+          },
+          {
+            'key': 'totals',
+            'outcomes': [
+              {'name': 'Over', 'price': -104, 'point': 48.5},
+              {'name': 'Under', 'price': -116, 'point': 48.5},
+            ],
+          },
+          {
+            'key': 'outrights',
+            'outcomes': [
+              {'name': 'Kansas City Chiefs AFC Winner', 'price': 265},
+              {'name': 'Buffalo Bills AFC Winner', 'price': 235},
             ],
           },
         ],
