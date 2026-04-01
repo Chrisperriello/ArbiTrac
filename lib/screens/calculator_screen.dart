@@ -1,14 +1,12 @@
-// Cyber-Arb calculator depth uses glassmorphism via BackdropFilter blur over a
-// semi-transparent panel while keeping all calculations in providers.
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/theme/quant_theme.dart';
-import '../../providers/providers.dart';
-import '../../widgets/manual_arb_calculator_card.dart';
-import '../styles/borders.dart';
+import '../core/theme/quant_theme.dart';
+import '../providers/providers.dart';
+import '../widgets/cyber_borders.dart';
+import '../widgets/manual_arb_calculator_card.dart';
 
 class CalculatorScreen extends ConsumerWidget {
   const CalculatorScreen({super.key});

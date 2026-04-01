@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../screens/dashboard_screen.dart';
 import 'calculator_screen.dart';
+import 'dashboard_screen.dart';
 
 class MainLayoutShell extends StatefulWidget {
   const MainLayoutShell({super.key});
@@ -57,9 +57,7 @@ class _MainLayoutShellState extends State<MainLayoutShell> {
                   top: 10,
                   left: 10,
                   child: IconButton.filledTonal(
-                    tooltip: _isSidebarVisible
-                        ? 'Hide sidebar'
-                        : 'Show sidebar',
+                    tooltip: _isSidebarVisible ? 'Hide sidebar' : 'Show sidebar',
                     onPressed: () {
                       setState(() => _isSidebarVisible = !_isSidebarVisible);
                     },

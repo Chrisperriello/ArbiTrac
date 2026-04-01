@@ -1,8 +1,6 @@
-// Cyber-Arb visual depth is border-driven: thin neon outlines replace elevation
-// to keep high-density surfaces crisp and technical.
 import 'package:flutter/material.dart';
 
-import '../../core/theme/cyber_arb_theme.dart';
+import '../core/theme/cyber_arb_theme.dart';
 
 BoxDecoration cyberArbOpportunityDecoration({required double profitPercent}) {
   final borderColor = profitPercent >= 3

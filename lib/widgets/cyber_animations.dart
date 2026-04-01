@@ -1,9 +1,7 @@
-// Cyber-Arb animation layer adds perceived speed: shimmer for incoming quotes
-// and pulse for freshness aging without changing core math/data flow.
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../../core/theme/cyber_arb_theme.dart';
+import '../core/theme/cyber_arb_theme.dart';
 
 Widget cyberShimmer({required Widget child}) {
   return Shimmer.fromColors(
