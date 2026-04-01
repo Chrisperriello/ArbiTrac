@@ -6,3 +6,5 @@ export 'sports_event_detail_screen.dart';
 export 'username_screen.dart';
 export 'auth_gate.dart';
 export 'settings_screen.dart';
+export '../ui/screens/calculator_screen.dart';
+export '../ui/screens/main_layout_shell.dart';
