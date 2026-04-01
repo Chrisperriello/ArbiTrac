@@ -5,6 +5,14 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      cardTheme: const CardThemeData(
+        elevation: 1,
+        margin: EdgeInsets.zero,
+      ),
       textTheme: const TextTheme(
         headlineSmall: TextStyle(fontWeight: FontWeight.w700),
         titleMedium: TextStyle(fontWeight: FontWeight.w600),
@@ -19,6 +27,14 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: Colors.indigo,
         brightness: Brightness.dark,
+      ),
+      inputDecorationTheme: const InputDecorationTheme(
+        border: OutlineInputBorder(),
+        isDense: true,
+      ),
+      cardTheme: const CardThemeData(
+        elevation: 1,
+        margin: EdgeInsets.zero,
       ),
       textTheme: const TextTheme(
         headlineSmall: TextStyle(fontWeight: FontWeight.w700),

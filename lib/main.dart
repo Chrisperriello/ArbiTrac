@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'core/config/app_config.dart';
+import 'core/theme/quant_theme.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
-import 'theme.dart';
 
 //Async function for updates
 Future<void> main() async {
@@ -35,8 +35,10 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const _AppRoot();
+    
   }
 }
+
 
 class _AppRoot extends ConsumerWidget {
   const _AppRoot();
@@ -44,10 +46,10 @@ class _AppRoot extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDarkModeAsync = ref.watch(appThemeModeProvider);
-    final isDarkMode = isDarkModeAsync.asData?.value ?? false;
+    final isDarkMode = isDarkModeAsync.asData?.value ?? true;
     return MaterialApp(
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: QuantTheme.theme,
+      darkTheme: QuantTheme.theme,
       themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
       home: const AuthGate(),
       routes: {
@@ -57,6 +59,8 @@ class _AppRoot extends ConsumerWidget {
         DashboardScreen.routeName: (_) => const DashboardScreen(),
         UsernameScreen.routeName: (_) => const UsernameScreen(),
         SettingsScreen.routeName: (_) => const SettingsScreen(),
+        CalculatorScreen.routeName: (_) => const CalculatorScreen(),
+        MainLayoutShell.routeName: (_) => const MainLayoutShell(),
       },
     );
   }

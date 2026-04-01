@@ -199,7 +199,7 @@ status).
 
 ### Phase 4: Polish and persistence
 
-- [ ] __Step 4.1: Local State (Shared Preferences)__
+- [x] __Step 4.1: Local State (Shared Preferences)__
     - Implemet a feature that saves to the local device (e.g., a "Dark Mode" toggle or a "Don't show
     this again" intro screen)
 
@@ -207,7 +207,7 @@ status).
 - [ ] __Step 4.2: Error Handling and Loading State__
     - Ensure all asynchronous Riverpod provider correctly handle loading and error states in the UI using AsyncValue.when()
 
-- [ ] __Step 4.3: Final Theming and Cleanup__
+- [x] __Step 4.3: Final Theming and Cleanup__
     - Apply Consistent PAdding, colors, and typography
     - Refacto any files that have grown too large 
     

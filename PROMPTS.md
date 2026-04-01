@@ -152,3 +152,199 @@ for that
 
 3/30
 -  Okay implment 4.1 
+-  Now 4.2 
+-  do 4.3 
+- The Refactoring Command Prompt
+
+Role: You are a Senior Flutter Lead & UI/UX Specialist.
+Project: ArbiTrac — A high-precision Arbitrage Betting Engine.
+Goal: Completely refactor the existing UI to the "Cyber-Arb" design system. This system is tailored for "prosumers" and must feel like a high-speed, technical trading terminal.
+
+1. The Design System (The "Cyber-Arb" Palette)
+
+Implement a global theme using the following hex codes:
+
+Background: #0F0F0F (True Black) — No elevation shadows; use borders for depth.
+
+Accent 1 (Primary): #BB86FC (Soft Violet) — Use for interactive elements and >1% profit arbs.
+
+Accent 2 (Secondary): #03DAC6 (Cyan Teal) — Use for secondary actions and data points.
+
+Profit Highlight: #CCFF00 (Neon Lime) — Use for high-tier arbs (>3%).
+
+Typography: #FFFFFF (Primary), #9E9E9E (Secondary/Muted Silver).
+
+Fonts: Use a Monospaced font (e.g., GoogleFonts.robotoMono) for all odds, percentages, and mathematical outputs.
+
+2. Core UI Component Refactor
+
+A. The Opportunity Card (lib/ui/widgets/opportunity_card.dart)
+
+Border: Remove standard cards. Use a Container with a 1px neon border.
+
+Dynamic Logic: * If Profit ≥3%: Border color is #CCFF00.
+
+If Profit ≥1%: Border color is #BB86FC.
+
+Otherwise: Border color is #9E9E9E at 30% opacity.
+
+Visuals: Add a shimmer effect (using the shimmer package) that triggers when a new opportunity is injected into the stream.
+
+Background: Use a very subtle linear gradient: [#0F0F0F, #1A1A1A].
+
+B. The Calculator & Modals (lib/ui/screens/calculator_screen.dart)
+
+Glassmorphism: Implement the "Smart Stake Allocation" calculator as a bottom sheet or modal using BackdropFilter with an ImageFilter.blur(sigmaX: 10, sigmaY: 10).
+
+Opacity: Use a semi-transparent surface: Colors.black.withOpacity(0.6).
+
+Layout: Ensure stake inputs are ultra-clean. Use "Cyber-Arb" Neon Lime for the "Guaranteed Profit" output text.
+
+C. Global Navigation & Dashboard (lib/ui/screens/dashboard.dart)
+
+Status Indicators: Refactor the "Freshness Indicator." Instead of a text timestamp, use a small glowing pulse icon. The pulse speed should increase as the data gets "stale" (older than 15 seconds).
+
+The Grid: Ensure the layout maximizes data density. Use thin dividers (0.5px) in #9E9E9E rather than padding-heavy cards.
+
+3. Mathematical Integrity & State
+
+Keep all logic in the Riverpod providers. Do not move math logic into the UI.
+
+Ensure the decimal and rational values are formatted to exactly 2 or 3 decimal places using the "Cyber-Arb" monospace font for perfect vertical alignment in tables.
+
+4. File Structure & Placement Instructions
+
+Theme definition: Create/update lib/core/theme/cyber_arb_theme.dart.
+
+Styles: Centralize all neon border decorators in lib/ui/styles/borders.dart.
+
+Animation: Place the shimmer and pulse logic in lib/ui/shared/animations.dart.
+
+Explanation: Provide a brief comment at the top of each refactored file explaining how the "Cyber-Arb" visual depth (Glassmorphism or Border logic) is applied.
+
+Constraint: Do not break the Firebase Auth flow or the Odds API integration. Focus purely on the visual layer and the user's emotional experience of speed and precision.
+
+-  I want the freshness indicator to have a pop up when hovered over saying
+  when teh last time the line had been updated and when you press on teh
+  card at the top it should also say teh time in live seconds then 1m .. 2m
+  .. 1 hr .. 1day ect 
+
+- CLI REFACTOR PROMPT: ArbiTrac "Quant" Command Center (V2)
+
+Role: Senior Flutter Architect & Fintech UI Specialist.
+Project: ArbiTrac — High-Precision Arbitrage Engine.
+Objective: Execute a complete visual and structural overhaul to transition the app into a "Quant Command Center"—a high-density, institutional-grade trading terminal.
+
+⚠️ STRICT DIRECTIVE: FRONT-END ONLY ⚠️
+
+DO NOT modify, delete, or refactor any backend logic, API integration services, Firebase controllers, or core mathematical engine files (anything handling decimal, rational, or probability calculations). Your scope is strictly limited to:
+
+Themes/Styles: lib/core/theme/
+
+Navigation/Layout: lib/ui/screens/
+
+Widgets/Components: lib/ui/widgets/
+Maintain all existing Riverpod providers and state management hooks as they currently exist.
+
+1. Global Design System (The "Quant" Palette)
+
+Refactor/Create lib/core/theme/quant_theme.dart with these specifications:
+
+Primary Background: #0B101B (Deep Navy) — Use for the main scaffold.
+
+Surface/Card: #1E2632 (Slate Gray) — Use for opportunity containers.
+
+Success/Profit: #00E676 (Electric Emerald) — Use for positive arbitrage percentages.
+
+Action/Links: #2979FF (Azure Blue) — Use for buttons and primary interactions.
+
+Warning/Stale: #FFD600 (Vivid Amber) — Use for odds older than 15 seconds.
+
+Typography: Set the global font to Roboto Mono or JetBrains Mono. All odds, stake amounts, and profit margins MUST use this monospaced font for perfect vertical alignment.
+
+2. Layout Refactor: Navigation & Density
+
+Sidebar Navigation: Remove the BottomNavigationBar. Implement a NavigationRail in a new lib/ui/screens/main_layout_shell.dart.
+
+Label type: NavigationRailLabelType.all.
+
+Icons: Use sharp, technical icons (e.g., Icons.analytics, Icons.calculate_outlined).
+
+Screen Density: Reduce all default Padding and Margin values by 40%. Prioritize "Data over Whitespace." Use compact ListView.builder or Table widgets for the main feed.
+
+3. Feature Refactor: The "Freshness Pulse"
+
+Create/Refactor lib/ui/widgets/freshness_indicator.dart with this logic:
+
+Visuals: A small circular pulse icon using a RepaintBoundary.
+
+Line Age < 10s: Glowing Emerald Pulse.
+
+Line Age > 10s: Steady Amber Glow.
+
+Hover Behavior: Wrap in a Tooltip displaying the exact DateTime of the last update.
+
+Timing Logic: Use a 1s Timer.periodic to calculate the "Age String":
+
+Format: 1s...59s, then 1m...59m, then 1h, then 1d.
+
+Interaction: When the user taps the top of the card, toggle a detailed text overlay that shows the live running clock (e.g., "Updated 42s ago").
+
+4. Component Refactor: Opportunity Card
+
+Refactor lib/ui/widgets/opportunity_card.dart:
+
+Structure: Flat Container with a 1px border of #1E2632. No shadows.
+
+Header: Match Name and the new Freshness Pulse on the same row.
+
+Body: A dense grid layout (3-column for 3-way arbs; 2-column for 2-way).
+
+Math Display: Display "Smart Stake Allocation" results in Emerald Green. Ensure all Decimal values use toStringAsFixed(2) in the monospaced font.
+
+5. Implementation Workflow
+
+Theme First: Update lib/core/theme/ and apply the global theme in main.dart.
+
+Shell Second: Build the NavigationRail layout in main_layout_shell.dart.
+
+Components Third: Refactor the FreshnessIndicator and OpportunityCard.
+
+Final Polish: Audit all screens for padding/margin consistency to ensure high-density "Command Center" feel.
+
+Proceed with the refactor now. Provide an explanation for every UI change made.
+
+- FOR DEBUGGING AND TESTING PURPOSES ONLY, Can you please add the final
+fall back to the mock data, make a note that this must be cleaned up and
+taken out before launch, I just dont want to use API tokens to check UI
+changes 
+
+-  Now for the event details, I want the Investment planner to sya also what
+  market to bet on, make sure it says teh correct sports book for the arb
+  calulations as well, as right now the event details allows us to switch
+  markets and also see all the sports books so I dont always know if we are
+  doing moneyline h2h ect
+
+
+  - Nice touch but i also need the market not just for the dallas mavericks,
+iw ould want bet dallas mavericky money line or for knicks spread of
+(-x.x) or whatever the spread was, use all tools to understand what
+should eb displayed to be very clear what you bet on for each market,
+somethings have nuaces like how the spread you should say the spread of
+each bet 
+
+-  I want under investment planner to have the highest reward market:
+  {insert market} and then a list of markets with all of the ones witha
+  postitve return, with that I want the card on the dash board to do the
+  same 
+
+
+- it seems as though the button to go to the manneual arb calulator is
+gone, I want the route to go there from the dashboard, and i want to make
+sure that the manuel calulator color way is also up to date and has a
+clean look 
+
+3/31
+-  Go through the codebase we have serveral issues,like two opportunity_card.dart, which one is
+  currently used we also have screens and ui screen and widgest and ui/widgets i want the ui file gone
+  I want to refactor them and get rid of repeats do you udnerstand 
