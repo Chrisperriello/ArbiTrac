@@ -8,6 +8,7 @@ import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/config/app_config.dart';
+import '../core/constants/mock_data.dart';
 
 class OddsApiService {
   static final Decimal _one = Decimal.fromInt(1);
@@ -18,6 +19,8 @@ class OddsApiService {
   static const String _oddsCacheKey = 'odds_api_cache_odds';
   static const String _coreMarkets = 'h2h,spreads,totals';
   static const String _outrightsMarket = 'outrights';
+  // TODO(debug-only): Remove mock fallback before production launch.
+  static const bool _enableDebugMockFallback = true;
 
   OddsApiService({
     SharedPreferences? preferences,
@@ -56,6 +59,10 @@ class OddsApiService {
       _log('fetchSports api success: ${remote.length} records');
       return remote;
     }
+    if (_enableDebugMockFallback) {
+      _log('fetchSports using debug mock fallback');
+      return _sportsMockFallback();
+    }
     _log('fetchSports api failed with no cached fallback');
     throw const OddsApiServiceException(
       'Failed to load sports: no cached data and API request failed.',
@@ -85,6 +92,10 @@ class OddsApiService {
       final filtered = _filterOddsBySport(normalizedRemote, sportKey);
       _log('fetchOdds api success: ${filtered.length} events after filtering');
       return filtered;
+    }
+    if (_enableDebugMockFallback) {
+      _log('fetchOdds using debug mock fallback');
+      return _oddsMockFallback(sportKey: sportKey);
     }
     _log('fetchOdds api failed with no cached fallback');
     throw const OddsApiServiceException(
@@ -415,6 +426,26 @@ class OddsApiService {
 
   Decimal _toDecimal(Rational value) {
     return value.toDecimal(scaleOnInfinitePrecision: _scaleOnInfinitePrecision);
+  }
+
+  List<Map<String, dynamic>> _sportsMockFallback() {
+    return mockSportsResponse
+        .map((sport) => _deepCopyMap(sport))
+        .toList(growable: false);
+  }
+
+  List<Map<String, dynamic>> _oddsMockFallback({String? sportKey}) {
+    final cloned = mockOddsResponse
+        .map((event) => _deepCopyMap(event))
+        .toList(growable: false);
+    final normalized = _normalizeOddsPayload(cloned);
+    return _filterOddsBySport(normalized, sportKey);
+  }
+
+  Map<String, dynamic> _deepCopyMap(Map<String, dynamic> source) {
+    return Map<String, dynamic>.from(
+      jsonDecode(jsonEncode(source)) as Map<String, dynamic>,
+    );
   }
 }
 
