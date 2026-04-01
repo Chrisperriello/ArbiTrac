@@ -2,6 +2,7 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/theme/quant_theme.dart';
 import '../providers/providers.dart';
 
 //The card for the manual arb
@@ -17,18 +18,23 @@ class ManualArbCalculatorCard extends ConsumerWidget {
     //format the odds
     final oddsFormat = ref.watch(manualArbOddsFormatProvider);
 
-    return Card(
-      //Expansion drop down card
-      child: ExpansionTile(
-        initiallyExpanded: false,
-        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-        title: Text(
-          'Manual Arb Calculator',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        subtitle: const Text('Tap to expand'),
+    return Container(
+      decoration: BoxDecoration(
+        color: QuantTheme.surface.withValues(alpha: 0.55),
+        border: Border.all(color: QuantTheme.action.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'Manual Arb Calculator',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: QuantTheme.action),
+          ),
+          const SizedBox(height: 8),
           //This is the drop down formater
           _OddsFormatDropdown(
             value: oddsFormat,
@@ -122,7 +128,12 @@ class ManualArbCalculatorCard extends ConsumerWidget {
             Text(
               'Guaranteed payout: \$${_formatDecimal(result.guaranteedPayout)}',
             ),
-            Text('Net Profit: \$${_formatDecimal(result.netProfit)}'),
+            Text(
+              'Net Profit: \$${_formatDecimal(result.netProfit)}',
+              style: Theme.of(
+                context,
+              ).textTheme.titleSmall?.copyWith(color: QuantTheme.profit),
+            ),
           ],
         ],
       ),
@@ -214,8 +225,6 @@ class _AmericanOddsInputRow extends StatelessWidget {
                 ),
                 decoration: const InputDecoration(
                   labelText: 'American odds value (e.g. 150)',
-                  border: OutlineInputBorder(),
-                  isDense: true,
                 ),
                 onChanged: onOddsChanged,
               ),
@@ -239,8 +248,6 @@ class _DecimalInputField extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(
         labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
       ),
       onChanged: onChanged,
     );
