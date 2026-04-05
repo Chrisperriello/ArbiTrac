@@ -7,6 +7,8 @@ class ArbOpportunity {
     required this.sportKey,
     required this.eventName,
     required this.marketLabel,
+    required this.bookmakerAKey,
+    required this.bookmakerBKey,
     required this.bookmakerA,
     required this.bookmakerB,
     required this.decimalOddsA,
@@ -21,6 +23,8 @@ class ArbOpportunity {
   final String sportKey;
   final String eventName;
   final String marketLabel;
+  final String bookmakerAKey;
+  final String bookmakerBKey;
   final String bookmakerA;
   final String bookmakerB;
   final Decimal decimalOddsA;
@@ -30,5 +34,6 @@ class ArbOpportunity {
   final DateTime commenceTime;
   final DateTime lastUpdatedAt;
 
-  String get favoriteId => '$eventId|$marketLabel|$bookmakerA|$bookmakerB';
+  String get favoriteId =>
+      '$eventId|$marketLabel|$bookmakerAKey|$bookmakerBKey';
 }
