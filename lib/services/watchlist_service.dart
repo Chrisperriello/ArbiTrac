@@ -8,8 +8,12 @@ class WatchlistService {
   static const String _favoriteOpportunityIdsKey =
       'favorite_opportunity_ids_v1';
   static const String _favoriteSportKeysKey = 'favorite_sport_keys_v1';
+  static const String _favoriteBookmakerKeysKey = 'favorite_bookmaker_keys_v1';
+  static const String _favoriteBookmakerUpdatedAtMsKey =
+      'favorite_bookmaker_keys_updated_at_ms_v1';
   static const String _favoriteOpportunityIdsField = 'favoriteOpportunityIds';
   static const String _favoriteSportKeysField = 'favoriteSportKeys';
+  static const String _favoriteBookmakerKeysField = 'favoriteBookmakerKeys';
 
   final FirebaseFirestore _firestore;
 
@@ -44,6 +48,34 @@ class WatchlistService {
     await preferences.setStringList(
       _favoriteSportKeysKey,
       keys.toList(growable: false),
+    );
+  }
+
+  Future<Set<String>> loadFavoriteBookmakerKeys() async {
+    final preferences = await SharedPreferences.getInstance();
+    final values = preferences.getStringList(_favoriteBookmakerKeysKey);
+    if (values == null) {
+      return <String>{};
+    }
+    return values.map((value) => value.trim().toLowerCase()).toSet();
+  }
+
+  Future<void> saveFavoriteBookmakerKeys(
+    Set<String> keys, {
+    DateTime? updatedAt,
+  }) async {
+    final preferences = await SharedPreferences.getInstance();
+    final normalizedKeys = keys
+        .map((key) => key.trim().toLowerCase())
+        .where((key) => key.isNotEmpty);
+    final effectiveUpdatedAt = (updatedAt ?? DateTime.now()).toUtc();
+    await preferences.setStringList(
+      _favoriteBookmakerKeysKey,
+      normalizedKeys.toList(growable: false),
+    );
+    await preferences.setInt(
+      _favoriteBookmakerUpdatedAtMsKey,
+      effectiveUpdatedAt.millisecondsSinceEpoch,
     );
   }
 
@@ -97,6 +129,62 @@ class WatchlistService {
     await _saveRemoteWatchlistFields(uid: uid, sportKeys: keys);
   }
 
+  Future<Set<String>> loadSyncedFavoriteBookmakerKeys({
+    required String uid,
+  }) async {
+    final local = await _loadLocalFavoriteBookmakerData();
+    final remote = await _loadRemoteFavoriteBookmakerData(uid: uid);
+    final localUpdatedAt =
+        local.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+    final remoteUpdatedAt =
+        remote.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+
+    if (remoteUpdatedAt.isAfter(localUpdatedAt)) {
+      await saveFavoriteBookmakerKeys(remote.keys, updatedAt: remoteUpdatedAt);
+      return remote.keys;
+    }
+    if (localUpdatedAt.isAfter(remoteUpdatedAt)) {
+      await saveFavoriteBookmakerKeysForUser(
+        uid: uid,
+        keys: local.keys,
+        updatedAt: localUpdatedAt,
+      );
+      return local.keys;
+    }
+    final merged = <String>{...local.keys, ...remote.keys};
+    if (merged.length != local.keys.length) {
+      await saveFavoriteBookmakerKeys(merged, updatedAt: localUpdatedAt);
+    }
+    if (merged.length != remote.keys.length) {
+      await saveFavoriteBookmakerKeysForUser(
+        uid: uid,
+        keys: merged,
+        updatedAt: localUpdatedAt,
+      );
+    }
+    return merged;
+  }
+
+  Future<void> saveFavoriteBookmakerKeysForUser({
+    required String uid,
+    required Set<String> keys,
+    DateTime? updatedAt,
+  }) async {
+    final effectiveUpdatedAt = (updatedAt ?? DateTime.now()).toUtc();
+    final normalizedKeys = keys
+        .map((key) => key.trim().toLowerCase())
+        .where((key) => key.isNotEmpty);
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('preferences')
+        .doc('bookmakers')
+        .set({
+          _favoriteBookmakerKeysField: normalizedKeys.toList(growable: false),
+          'updatedAt': Timestamp.fromDate(effectiveUpdatedAt),
+        }, SetOptions(merge: true));
+  }
+
   Set<String> _extractStringSet(Object? rawValue) {
     if (rawValue is! List<dynamic>) {
       return <String>{};
@@ -106,6 +194,49 @@ class WatchlistService {
         .map((value) => value.trim())
         .where((value) => value.isNotEmpty)
         .toSet();
+  }
+
+  Future<_FavoriteBookmakerData> _loadLocalFavoriteBookmakerData() async {
+    final preferences = await SharedPreferences.getInstance();
+    final values =
+        preferences.getStringList(_favoriteBookmakerKeysKey) ?? const [];
+    final updatedAtMs = preferences.getInt(_favoriteBookmakerUpdatedAtMsKey);
+    return _FavoriteBookmakerData(
+      keys: values
+          .map((value) => value.trim().toLowerCase())
+          .where((value) => value.isNotEmpty)
+          .toSet(),
+      updatedAt: updatedAtMs == null
+          ? null
+          : DateTime.fromMillisecondsSinceEpoch(updatedAtMs, isUtc: true),
+    );
+  }
+
+  Future<_FavoriteBookmakerData> _loadRemoteFavoriteBookmakerData({
+    required String uid,
+  }) async {
+    final snapshot = await _firestore
+        .collection('users')
+        .doc(uid)
+        .collection('preferences')
+        .doc('bookmakers')
+        .get();
+    final data = snapshot.data();
+    if (data == null) {
+      return const _FavoriteBookmakerData(keys: <String>{}, updatedAt: null);
+    }
+    final rawUpdatedAt = data['updatedAt'];
+    final updatedAt = switch (rawUpdatedAt) {
+      Timestamp ts => ts.toDate().toUtc(),
+      DateTime dt => dt.toUtc(),
+      _ => null,
+    };
+    return _FavoriteBookmakerData(
+      keys: _extractStringSet(
+        data[_favoriteBookmakerKeysField],
+      ).map((key) => key.toLowerCase()).toSet(),
+      updatedAt: updatedAt,
+    );
   }
 
   Future<void> _saveRemoteWatchlistFields({
@@ -124,9 +255,16 @@ class WatchlistService {
     if (sportKeys != null) {
       payload[_favoriteSportKeysField] = sportKeys.toList(growable: false);
     }
-    await _firestore.collection('users').doc(uid).set(
-      payload,
-      SetOptions(merge: true),
-    );
+    await _firestore
+        .collection('users')
+        .doc(uid)
+        .set(payload, SetOptions(merge: true));
   }
+}
+
+class _FavoriteBookmakerData {
+  const _FavoriteBookmakerData({required this.keys, required this.updatedAt});
+
+  final Set<String> keys;
+  final DateTime? updatedAt;
 }

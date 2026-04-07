@@ -248,6 +248,53 @@ class FavoriteSportKeysNotifier extends AsyncNotifier<Set<String>> {
   }
 }
 
+final favoriteBookmakerKeysProvider =
+    AsyncNotifierProvider<FavoriteBookmakerKeysNotifier, Set<String>>(
+      FavoriteBookmakerKeysNotifier.new,
+    );
+
+class FavoriteBookmakerKeysNotifier extends AsyncNotifier<Set<String>> {
+  @override
+  Future<Set<String>> build() async {
+    final watchlistService = ref.watch(watchlistServiceProvider);
+    final localKeys = await watchlistService.loadFavoriteBookmakerKeys();
+    ref.read(activeBookmakerKeysProvider.notifier).state = localKeys;
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user == null) {
+      return localKeys;
+    }
+    final synced = await watchlistService.loadSyncedFavoriteBookmakerKeys(
+      uid: user.uid,
+    );
+    ref.read(activeBookmakerKeysProvider.notifier).state = synced;
+    return synced;
+  }
+
+  Future<void> toggleFavoriteBookmaker(String bookmakerKey) async {
+    final normalizedKey = bookmakerKey.trim().toLowerCase();
+    if (normalizedKey.isEmpty) {
+      return;
+    }
+    final current = state.asData?.value ?? <String>{};
+    final next = Set<String>.from(current);
+    if (!next.add(normalizedKey)) {
+      next.remove(normalizedKey);
+    }
+    state = AsyncData(next);
+    ref.read(activeBookmakerKeysProvider.notifier).state = next;
+    final watchlistService = ref.read(watchlistServiceProvider);
+    await watchlistService.saveFavoriteBookmakerKeys(next);
+    final user = ref.read(authStateChangesProvider).value;
+    if (user == null) {
+      return;
+    }
+    await watchlistService.saveFavoriteBookmakerKeysForUser(
+      uid: user.uid,
+      keys: next,
+    );
+  }
+}
+
 final manualArbCalculatorProvider =
     Provider.autoDispose<ManualArbCalculatorState>((ref) {
       final one = Decimal.fromInt(1);
@@ -366,11 +413,16 @@ final arbOpportunitiesProvider =
       final sortOption = ref.watch(dashboardSortOptionProvider);
       final favoriteSportKeys =
           ref.watch(favoriteSportKeysProvider).asData?.value ?? <String>{};
-      final activeBookmakerKeys = ref
-          .watch(activeBookmakerKeysProvider)
-          .map((key) => key.trim().toLowerCase())
-          .where((key) => key.isNotEmpty)
-          .toSet();
+      final persistedBookmakerKeys =
+          ref.watch(favoriteBookmakerKeysProvider).asData?.value ?? <String>{};
+      final adHocBookmakerKeys = ref.watch(activeBookmakerKeysProvider);
+      final activeBookmakerKeys =
+          (persistedBookmakerKeys.isNotEmpty
+                  ? persistedBookmakerKeys
+                  : adHocBookmakerKeys)
+              .map((key) => key.trim().toLowerCase())
+              .where((key) => key.isNotEmpty)
+              .toSet();
       final favoriteOpportunityIds =
           ref.watch(favoriteOpportunityIdsProvider).asData?.value ?? <String>{};
       return oddsAsync.whenData((oddsPayload) {
