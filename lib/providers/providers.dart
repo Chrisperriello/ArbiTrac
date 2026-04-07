@@ -65,17 +65,41 @@ final rawOddsProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((
   return service.watchOdds();
 });
 
+final activeBookmakerKeysProvider = StateProvider<Set<String>>((ref) {
+  return <String>{};
+});
+
+final availableBookmakersByKeyProvider =
+    Provider.autoDispose<AsyncValue<Map<String, String>>>((ref) {
+      final oddsAsync = ref.watch(rawOddsProvider);
+      return oddsAsync.whenData((events) {
+        final byKey = <String, String>{};
+        for (final event in events) {
+          final bookmakers = event['bookmakers'] as List<dynamic>? ?? const [];
+          for (final bookmakerNode in bookmakers) {
+            final bookmaker = Map<String, dynamic>.from(bookmakerNode as Map);
+            final key = (bookmaker['key'] as String? ?? '')
+                .trim()
+                .toLowerCase();
+            if (key.isEmpty) {
+              continue;
+            }
+            final title = (bookmaker['title'] as String? ?? key).trim();
+            byKey[key] = title.isEmpty ? key : title;
+          }
+        }
+        return byKey;
+      });
+    });
+
 final selectedMarketKeyProvider = StateProvider.autoDispose
     .family<String?, String>((ref, eventId) => null);
 
 final opportunityInvestmentInputProvider = StateProvider.autoDispose
     .family<String, String>((ref, opportunityId) => '');
 
-final sportsEventDetailProvider =
-    Provider.autoDispose.family<AsyncValue<SportsEventDetail?>, String>((
-      ref,
-      eventId,
-    ) {
+final sportsEventDetailProvider = Provider.autoDispose
+    .family<AsyncValue<SportsEventDetail?>, String>((ref, eventId) {
       final eventsAsync = ref.watch(rawOddsProvider);
       return eventsAsync.whenData((events) {
         for (final event in events) {
@@ -96,10 +120,9 @@ enum ManualArbOddsFormat { decimal, american }
 
 enum ManualArbAmericanSign { plus, minus }
 
-final appThemeModeProvider =
-    AsyncNotifierProvider<AppThemeModeNotifier, bool>(
-      AppThemeModeNotifier.new,
-    );
+final appThemeModeProvider = AsyncNotifierProvider<AppThemeModeNotifier, bool>(
+  AppThemeModeNotifier.new,
+);
 
 class AppThemeModeNotifier extends AsyncNotifier<bool> {
   static const String _themeModeDarkKey = 'app_theme_mode_dark_v1';
@@ -341,8 +364,21 @@ final arbOpportunitiesProvider =
     Provider.autoDispose<AsyncValue<List<ArbOpportunity>>>((ref) {
       final oddsAsync = ref.watch(rawOddsProvider);
       final sortOption = ref.watch(dashboardSortOptionProvider);
+      final favoriteSportKeys =
+          ref.watch(favoriteSportKeysProvider).asData?.value ?? <String>{};
+      final activeBookmakerKeys = ref
+          .watch(activeBookmakerKeysProvider)
+          .map((key) => key.trim().toLowerCase())
+          .where((key) => key.isNotEmpty)
+          .toSet();
+      final favoriteOpportunityIds =
+          ref.watch(favoriteOpportunityIdsProvider).asData?.value ?? <String>{};
       return oddsAsync.whenData((oddsPayload) {
-        final opportunities = _extractArbOpportunities(oddsPayload);
+        final opportunities = _filterOpportunities(
+          opportunities: _extractArbOpportunities(oddsPayload),
+          favoriteSportKeys: favoriteSportKeys,
+          activeBookmakerKeys: activeBookmakerKeys,
+        );
         opportunities.sort((a, b) {
           switch (sortOption) {
             case DashboardSortOption.highestProfit:
@@ -351,9 +387,52 @@ final arbOpportunitiesProvider =
               return a.commenceTime.compareTo(b.commenceTime);
           }
         });
-        return opportunities;
+        return _prioritizeFavoriteOpportunities(
+          opportunities,
+          favoriteOpportunityIds,
+        );
       });
     });
+
+List<ArbOpportunity> _filterOpportunities({
+  required List<ArbOpportunity> opportunities,
+  required Set<String> favoriteSportKeys,
+  required Set<String> activeBookmakerKeys,
+}) {
+  final bySport = favoriteSportKeys.isEmpty
+      ? opportunities
+      : opportunities
+            .where(
+              (opportunity) => favoriteSportKeys.contains(opportunity.sportKey),
+            )
+            .toList(growable: false);
+  if (activeBookmakerKeys.isEmpty) {
+    return bySport;
+  }
+  return bySport
+      .where(
+        (opportunity) =>
+            activeBookmakerKeys.contains(opportunity.bookmakerAKey) &&
+            activeBookmakerKeys.contains(opportunity.bookmakerBKey),
+      )
+      .toList(growable: false);
+}
+
+List<ArbOpportunity> _prioritizeFavoriteOpportunities(
+  List<ArbOpportunity> opportunities,
+  Set<String> favoriteOpportunityIds,
+) {
+  final prioritized = opportunities.toList(growable: false)
+    ..sort((a, b) {
+      final aFavorite = favoriteOpportunityIds.contains(a.favoriteId);
+      final bFavorite = favoriteOpportunityIds.contains(b.favoriteId);
+      if (aFavorite == bFavorite) {
+        return 0;
+      }
+      return aFavorite ? -1 : 1;
+    });
+  return prioritized;
+}
 
 //This function is for actually extracting the opportunites
 List<ArbOpportunity> _extractArbOpportunities(
@@ -385,6 +464,7 @@ List<ArbOpportunity> _extractArbOpportunities(
       final bookmaker = Map<String, dynamic>.from(book as Map);
       // get the name
       final bookmakerTitle = bookmaker['title'] as String? ?? 'Unknown';
+      final bookmakerKey = _normalizedBookmakerKey(bookmaker);
       final lastUpdatedAt =
           _parseDateTime(bookmaker['last_update']) ?? DateTime.now();
       //Get the markets
@@ -419,6 +499,7 @@ List<ArbOpportunity> _extractArbOpportunities(
           if (existing == null || decimalPrice > existing.decimalOdds) {
             marketBest[outcomeName] = _OutcomeQuote(
               decimalOdds: decimalPrice,
+              bookmakerKey: bookmakerKey,
               bookmakerTitle: bookmakerTitle,
               lastUpdatedAt: lastUpdatedAt,
             );
@@ -458,6 +539,8 @@ List<ArbOpportunity> _extractArbOpportunities(
           sportKey: sportKey,
           eventName: eventName,
           marketLabel: _marketLabel(marketKey),
+          bookmakerAKey: firstQuote.bookmakerKey,
+          bookmakerBKey: secondQuote.bookmakerKey,
           bookmakerA: firstQuote.bookmakerTitle,
           bookmakerB: secondQuote.bookmakerTitle,
           decimalOddsA: firstQuote.decimalOdds,
@@ -565,6 +648,15 @@ DateTime? _parseDateTime(dynamic value) {
   return DateTime.tryParse(value);
 }
 
+String _normalizedBookmakerKey(Map<String, dynamic> bookmaker) {
+  final key = (bookmaker['key'] as String? ?? '').trim().toLowerCase();
+  if (key.isNotEmpty) {
+    return key;
+  }
+  final title = (bookmaker['title'] as String? ?? '').trim().toLowerCase();
+  return title;
+}
+
 //Parse the decimal value
 Decimal? _parseDecimal(dynamic value) {
   return switch (value) {
@@ -579,11 +671,13 @@ Decimal? _parseDecimal(dynamic value) {
 class _OutcomeQuote {
   const _OutcomeQuote({
     required this.decimalOdds,
+    required this.bookmakerKey,
     required this.bookmakerTitle,
     required this.lastUpdatedAt,
   });
 
   final Decimal decimalOdds;
+  final String bookmakerKey;
   final String bookmakerTitle;
   final DateTime lastUpdatedAt;
 }

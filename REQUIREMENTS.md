@@ -222,5 +222,58 @@ status).
 
 This section should be dated and also numbered for prioty (number removed once completed)
 
-- [ ] __5.1: API limitation calling__:
-    Purpose: If we are filtering based on sports books and classes or 
+- [ ] __5.1 Book filter__:
+    *Goal: Give users the power to filter their "Live Opportunity List" based on the specific books they actually have accounts with, ensuring every displayed "Arb" is actionable.*
+
+    - [x] __5.1.1: Favorite Sportsbooks (Logic & Filtering)__
+        - **The Filtering Engine**: Enhance the `opportunitiesProvider` to accept a second list of filters: `activeBookmakers`.
+        - **Logic Proximity**: Co-locate the methods for filtering books in the same Service/Provider as the sport-category filtering to ensure a dual-pass check:
+            1. *Is the sport category currently active?*
+            2. *Are BOTH bookmakers involved in this specific Arb currently active?*
+        - **The Arb-Validity Rule**: Strictly exclude any opportunity from the dashboard if one or more of the books involved are not in the user's "Favorites" list.
+        - Implemented provider-layer dual-pass filtering (`sport` then `bookmakers`) with `activeBookmakerKeysProvider`; empty bookmaker selection defaults to no bookmaker constraint.
+
+    - [ ] __5.1.2: Saving (Dual-Layer Persistence)__
+        - **Local-First Strategy**: Store favorite sportsbook IDs in `shared_preferences` to allow the UI to render filters instantly upon app launch, even before the Firebase handshake.
+        - **Cloud-Sync Strategy**: Trigger an asynchronous update to the user's Firestore document (e.g., `users/{userId}/preferences/bookmakers`) whenever a toggle occurs.
+        - **Conflict Resolution**: Implement a sync check on app initialization that compares local timestamps against Firestore to ensure the user's latest preferences are reflected across all devices.
+
+    - [ ] __5.1.3: UI Implementation (The Filter Stack)__
+        - **The Filter Bar Hierarchy**: Place a horizontal scrollable row of `FilterChip` widgets directly beneath the "Favorite Sports" row to create a logical "Filter Stack."
+        - **Component Design**: 
+            - Use sportsbook branding/logos within the chips for quick recognition.
+            - Utilize high-contrast "Active" states (defined in `theme.dart`) to show which books are currently filtering the list.
+            - Integrate a "Select All" toggle at the start of the row to prevent "Filter Fatigue" when managing multiple books.
+        - **Reactivity**: Ensure the Dashboard `ListView` reactively updates via Riverpod as soon as a chip is toggled.
+
+        
+- [ ] __5.2: Settings expanded__:
+    *Goal: Transform the basic settings into a granular control center for user preferences and app aesthetics, utilizing a tabbed layout for improved navigation.*
+
+    - [ ] __5.2.1: Settings Tabbed Layout (Favorites Hub)__
+        - **Navigation Architecture**: Implement a `DefaultTabController` at the top of the Settings screen with a `TabBar` containing "Favorites" and "Theme" tabs.
+        - **The Favorites Tab**: Organize this view into two distinct, vertically scrollable sections: "Favorite Sports" and "Favorite Books."
+        - **Section Layout**: Each section will feature a header with a "Plus" (+) action button to trigger the addition workflow.
+        - [ ] __5.2.1.1: Setting Favorite Card Component__
+            - **Visual Design**: A streamlined, low-profile `Card` widget displaying the name of the entity (Sport or Bookmaker).
+            - **Interaction**: Include a trailing "Minus" (-) or "Trash" icon button. When pressed, it triggers the removal logic from both `shared_preferences` and `Firestore`.
+        - [ ] __5.2.1.2: Add-Favorite Modal (The Discovery Overlay)__
+            - **UI/UX**: Implement a `showDialog` or `showModalBottomSheet` with a `BackdropFilter` to create a professional blurred-background effect. 
+            - **Dynamic Loading**: The modal will populate cards based on the API's full list of supported sports or bookmakers.
+            - **Add Logic**: Each card in the modal features a "Plus" (+) button. Once pressed, the item is added to the user's active list, and the UI reactively updates the background Settings page via Riverpod.
+
+
+    - [ ] __5.2.2: Universal Theme Engine & Refactor__
+        - **Theme Centralization**: Refactor `lib/theme.dart` into a "Theme Registry." Instead of simple variables, create a class that defines distinct `ThemeData` objects for each mode:
+            - **Dark Mode**: High-contrast blacks/greys for night betting.
+            - **Quant Mode**: A clean, data-heavy "Bloomberg-style" aesthetic.
+            - **Cyber Mode**: Neon accents and dark backgrounds for a high-tech automation feel.
+        - **Dynamic Theme Switcher**: 
+            - **UI**: In the "Theme" tab of Settings, implement a `DropdownButtonFormField` or a series of `RadioListTile` widgets displaying the available theme names.
+            - **State Management**: Connect the selection to a `ThemeNotifier` (Riverpod) that wraps the `MaterialApp`'s `theme` property.
+            - **Persistence**: Ensure the selected theme ID is saved to `shared_preferences` so the user's aesthetic preference persists across app restarts.
+        
+- [ ] __5.3: API limitation calling__:
+    Purpose: If we are filtering based on sports books and classes
+    - We want api calls to only call sports that are saved as favorites, so only lines for NBA if that is the only favorite
+    - WE want api call to only call for the books that the filter has as filtered books

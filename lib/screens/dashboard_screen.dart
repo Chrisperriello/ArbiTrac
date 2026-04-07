@@ -39,11 +39,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         favoriteSportKeysAsync.asData?.value ?? <String>{};
     final searchableOpportunities = opportunitiesAsync.asData == null
         ? const <ArbOpportunity>[]
-        : _prepareDisplayedOpportunities(
-            opportunities: opportunitiesAsync.asData!.value,
-            favoriteSportKeys: favoriteSportKeys,
-            favoriteOpportunityIds: favoriteIds,
-          );
+        : opportunitiesAsync.asData!.value;
 
     return Scaffold(
       appBar: AppBar(
@@ -69,9 +65,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 if (!context.mounted) {
                   return;
                 }
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(error.message)),
-                );
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(error.message)));
               }
             }
           },
@@ -175,15 +171,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             const SizedBox(height: 6),
             sportsByKeyAsync.when(
               data: (sportsByKey) {
-                final sortedEntries = sportsByKey.entries.toList(growable: false)
-                  ..sort((a, b) {
-                    final aPinned = favoriteSportKeys.contains(a.key);
-                    final bPinned = favoriteSportKeys.contains(b.key);
-                    if (aPinned != bPinned) {
-                      return aPinned ? -1 : 1;
-                    }
-                    return a.value.compareTo(b.value);
-                  });
+                final sortedEntries =
+                    sportsByKey.entries.toList(growable: false)..sort((a, b) {
+                      final aPinned = favoriteSportKeys.contains(a.key);
+                      final bPinned = favoriteSportKeys.contains(b.key);
+                      if (aPinned != bPinned) {
+                        return aPinned ? -1 : 1;
+                      }
+                      return a.value.compareTo(b.value);
+                    });
                 final visibleEntries = _showAllSports
                     ? sortedEntries
                     : sortedEntries.take(5).toList(growable: false);
@@ -277,26 +273,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             Expanded(
               child: opportunitiesAsync.when(
                 data: (opportunities) {
-                  final displayed = _prepareDisplayedOpportunities(
-                    opportunities: opportunities,
-                    favoriteSportKeys: favoriteSportKeys,
-                    favoriteOpportunityIds: favoriteIds,
-                  );
-                  if (displayed.isEmpty) {
+                  if (opportunities.isEmpty) {
                     return const Center(
                       child: Text('No arbitrage opportunities right now.'),
                     );
                   }
                   return ListView.separated(
-                    itemCount: displayed.length,
-                    separatorBuilder: (context, index) =>
-                        Divider(
-                          height: 8,
-                          thickness: 0.5,
-                          color: Theme.of(context).dividerColor,
-                        ),
+                    itemCount: opportunities.length,
+                    separatorBuilder: (context, index) => Divider(
+                      height: 8,
+                      thickness: 0.5,
+                      color: Theme.of(context).dividerColor,
+                    ),
                     itemBuilder: (context, index) {
-                      final opportunity = displayed[index];
+                      final opportunity = opportunities[index];
                       final isFavorite = favoriteIds.contains(
                         opportunity.favoriteId,
                       );
@@ -334,30 +324,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
     );
   }
-}
-
-List<ArbOpportunity> _prepareDisplayedOpportunities({
-  required List<ArbOpportunity> opportunities,
-  required Set<String> favoriteSportKeys,
-  required Set<String> favoriteOpportunityIds,
-}) {
-  final filtered = favoriteSportKeys.isEmpty
-      ? opportunities
-      : opportunities
-            .where(
-              (opportunity) => favoriteSportKeys.contains(opportunity.sportKey),
-            )
-            .toList(growable: false);
-  final prioritized = filtered.toList(growable: false)
-    ..sort((a, b) {
-      final aFavorite = favoriteOpportunityIds.contains(a.favoriteId);
-      final bFavorite = favoriteOpportunityIds.contains(b.favoriteId);
-      if (aFavorite == bFavorite) {
-        return 0;
-      }
-      return aFavorite ? -1 : 1;
-    });
-  return prioritized;
 }
 
 class _OpportunitySearchDelegate extends SearchDelegate<ArbOpportunity?> {
