@@ -348,3 +348,49 @@ clean look
 -  Go through the codebase we have serveral issues,like two opportunity_card.dart, which one is
   currently used we also have screens and ui screen and widgest and ui/widgets i want the ui file gone
   I want to refactor them and get rid of repeats do you udnerstand 
+
+  4/7
+  - Do 5.1.1 
+  - continue to 5.1.2 
+  - continue to 5.1.3
+  - 
+  - Now there is an delay, when i select on the UI card it will reset to all sport but the filter wont
+  change, also the filter doesnt work with the mock data, the mock data has ESPNBET as an opportunity
+  but if it is a filter then it doesnt show up, Either the cloud data is messing up with the local data
+  dor the UI and THE filter uses the data directly maybe and should rather filter all the arb
+  opportunites, which should be compiled and created and stored UNTIL another API call so we ca just
+  quickly push and pull them from the screen due to filtering 
+- When i hit on a sports book and then i try to click if off like toggling the program stalls here:
+  Future<void> set(Map<String, dynamic> data,                                                    
+      [firestore_interop.SetOptions? options]) async {                                           
+    if (options != null) {                                                                       
+      await firestore_interop.setDoc(jsObject, jsify(data), options).toDart;                     
+      return;                                                                                    
+    }                                                                                            
+    await firestore_interop.setDoc(jsObject, jsify(data)).toDart;                                
+  } in  firestore.dart in a .pub-cache file    
+
+  - I NEED YOU TO FIX THE FAVORITE :                                                                      
+[Config] OMIT19d4ff47cb6cdaa0c57a8a8d0dafbf5a                                                         
+[OddsApiService] GET                                                                                  
+https://api.the-odds-api.com/v4/sports?apiKey=OMIT19d4ff47cb6cdaa0c57a8a8d0dafbf5a&all=true           
+[OddsApiService] sports response status=401 remaining=unknown used=unknown                            
+[OddsApiService] fetchSports using debug mock fallback                                                
+[OddsApiService] sports response status=401 remaining=unknown used=unknown                            
+[OddsApiService] odds pull aborted: sports list unavailable                                           
+[OddsApiService] fetchOdds using debug mock fallback                                                  
+[OddsApiService] watchOdds initial emit: 5 events                                                     
+Failed syncing favorite bookmakers: [cloud_firestore/permission-denied] Missing or insufficient       
+permissions.                                                                                          
+ EXCEPTION CAUGHT BY FAVORITE_BOOKMAKER_SYNC                                                          
+The following FirebaseException was thrown while syncing favorite bookmaker keys to Firestore:        
+[cloud_firestore/permission-denied] Missing or insufficient permissions.                              
+                                                                                                      
+When the exception was thrown, this was the stack                                                     
+                                                                                                      
+Failed syncing favorite bookmakers: [cloud_firestore/permission-denied] Missing or insufficient       
+permissions.                                                                                          
+Another exception was thrown: [cloud_firestore/permission-denied] Missing or insufficient permissions.
+ -- so I think this is why the lsit is getting reset everytime because it is trying to update and cant
+ -  Now I also want the favorite sports book to show arb opportunities but if only one of the books match
+  not both 

@@ -222,7 +222,7 @@ status).
 
 This section should be dated and also numbered for prioty (number removed once completed)
 
-- [ ] __5.1 Book filter__:
+- [x] __5.1 Book filter__:
     *Goal: Give users the power to filter their "Live Opportunity List" based on the specific books they actually have accounts with, ensuring every displayed "Arb" is actionable.*
 
     - [x] __5.1.1: Favorite Sportsbooks (Logic & Filtering)__
@@ -233,18 +233,20 @@ This section should be dated and also numbered for prioty (number removed once c
         - **The Arb-Validity Rule**: Strictly exclude any opportunity from the dashboard if one or more of the books involved are not in the user's "Favorites" list.
         - Implemented provider-layer dual-pass filtering (`sport` then `bookmakers`) with `activeBookmakerKeysProvider`; empty bookmaker selection defaults to no bookmaker constraint.
 
-    - [ ] __5.1.2: Saving (Dual-Layer Persistence)__
+    - [x] __5.1.2: Saving (Dual-Layer Persistence)__
         - **Local-First Strategy**: Store favorite sportsbook IDs in `shared_preferences` to allow the UI to render filters instantly upon app launch, even before the Firebase handshake.
         - **Cloud-Sync Strategy**: Trigger an asynchronous update to the user's Firestore document (e.g., `users/{userId}/preferences/bookmakers`) whenever a toggle occurs.
         - **Conflict Resolution**: Implement a sync check on app initialization that compares local timestamps against Firestore to ensure the user's latest preferences are reflected across all devices.
+        - Implemented `favoriteBookmakerKeysProvider` + `WatchlistService` persistence with local timestamped `shared_preferences`, Firestore sync at `users/{uid}/preferences/bookmakers`, and latest-write conflict resolution on initialization.
 
-    - [ ] __5.1.3: UI Implementation (The Filter Stack)__
+    - [x] __5.1.3: UI Implementation (The Filter Stack)__
         - **The Filter Bar Hierarchy**: Place a horizontal scrollable row of `FilterChip` widgets directly beneath the "Favorite Sports" row to create a logical "Filter Stack."
         - **Component Design**: 
             - Use sportsbook branding/logos within the chips for quick recognition.
             - Utilize high-contrast "Active" states (defined in `theme.dart`) to show which books are currently filtering the list.
             - Integrate a "Select All" toggle at the start of the row to prevent "Filter Fatigue" when managing multiple books.
         - **Reactivity**: Ensure the Dashboard `ListView` reactively updates via Riverpod as soon as a chip is toggled.
+        - Added a dashboard sportsbook chip row beneath pinned sports with a leading "Select All" toggle, high-contrast active chip styling from `QuantTheme`, and reactive Riverpod-driven updates tied to persisted bookmaker preferences.
 
         
 - [ ] __5.2: Settings expanded__:

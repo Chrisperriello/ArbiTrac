@@ -14,6 +14,8 @@ class WatchlistService {
   static const String _favoriteOpportunityIdsField = 'favoriteOpportunityIds';
   static const String _favoriteSportKeysField = 'favoriteSportKeys';
   static const String _favoriteBookmakerKeysField = 'favoriteBookmakerKeys';
+  static const String _favoriteBookmakerUpdatedAtField =
+      'favoriteBookmakerUpdatedAt';
 
   final FirebaseFirestore _firestore;
 
@@ -174,15 +176,10 @@ class WatchlistService {
     final normalizedKeys = keys
         .map((key) => key.trim().toLowerCase())
         .where((key) => key.isNotEmpty);
-    await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('preferences')
-        .doc('bookmakers')
-        .set({
-          _favoriteBookmakerKeysField: normalizedKeys.toList(growable: false),
-          'updatedAt': Timestamp.fromDate(effectiveUpdatedAt),
-        }, SetOptions(merge: true));
+    await _firestore.collection('users').doc(uid).set({
+      _favoriteBookmakerKeysField: normalizedKeys.toList(growable: false),
+      _favoriteBookmakerUpdatedAtField: Timestamp.fromDate(effectiveUpdatedAt),
+    }, SetOptions(merge: true));
   }
 
   Set<String> _extractStringSet(Object? rawValue) {
@@ -215,17 +212,12 @@ class WatchlistService {
   Future<_FavoriteBookmakerData> _loadRemoteFavoriteBookmakerData({
     required String uid,
   }) async {
-    final snapshot = await _firestore
-        .collection('users')
-        .doc(uid)
-        .collection('preferences')
-        .doc('bookmakers')
-        .get();
+    final snapshot = await _firestore.collection('users').doc(uid).get();
     final data = snapshot.data();
     if (data == null) {
       return const _FavoriteBookmakerData(keys: <String>{}, updatedAt: null);
     }
-    final rawUpdatedAt = data['updatedAt'];
+    final rawUpdatedAt = data[_favoriteBookmakerUpdatedAtField];
     final updatedAt = switch (rawUpdatedAt) {
       Timestamp ts => ts.toDate().toUtc(),
       DateTime dt => dt.toUtc(),
