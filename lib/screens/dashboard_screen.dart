@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/theme/quant_theme.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
@@ -33,10 +34,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final favoritesAsync = ref.watch(favoriteOpportunityIdsProvider);
     final sportsByKeyAsync = ref.watch(availableSportsByKeyProvider);
     final favoriteSportKeysAsync = ref.watch(favoriteSportKeysProvider);
+    final availableBookmakersByKeyAsync = ref.watch(
+      availableBookmakersByKeyProvider,
+    );
+    final favoriteBookmakerKeysAsync = ref.watch(favoriteBookmakerKeysProvider);
     final favoriteIds = favoritesAsync.asData?.value ?? <String>{};
     final sportsByKey = sportsByKeyAsync.asData?.value ?? <String, String>{};
     final favoriteSportKeys =
         favoriteSportKeysAsync.asData?.value ?? <String>{};
+    final favoriteBookmakerKeys =
+        favoriteBookmakerKeysAsync.asData?.value ?? <String>{};
     final searchableOpportunities = opportunitiesAsync.asData == null
         ? const <ArbOpportunity>[]
         : opportunitiesAsync.asData!.value;
@@ -244,6 +251,116 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ),
             ],
             const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Favorite sportsbooks',
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ),
+            const SizedBox(height: 6),
+            availableBookmakersByKeyAsync.when(
+              data: (bookmakersByKey) {
+                if (bookmakersByKey.isEmpty) {
+                  return const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('No sportsbooks available yet.'),
+                  );
+                }
+                final sortedEntries =
+                    bookmakersByKey.entries.toList(growable: false)
+                      ..sort((a, b) {
+                        final aPinned = favoriteBookmakerKeys.contains(a.key);
+                        final bPinned = favoriteBookmakerKeys.contains(b.key);
+                        if (aPinned != bPinned) {
+                          return aPinned ? -1 : 1;
+                        }
+                        return a.value.compareTo(b.value);
+                      });
+                final selectAllSelected =
+                    favoriteBookmakerKeys.isEmpty ||
+                    favoriteBookmakerKeys.length == sortedEntries.length;
+                final chips = <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: selectAllSelected,
+                      label: const Text('Select All'),
+                      selectedColor: QuantTheme.action.withValues(alpha: 0.3),
+                      checkmarkColor: QuantTheme.textPrimary,
+                      side: BorderSide(
+                        color: selectAllSelected
+                            ? QuantTheme.action
+                            : QuantTheme.textMuted.withValues(alpha: 0.65),
+                      ),
+                      onSelected: (_) async {
+                        await ref
+                            .read(favoriteBookmakerKeysProvider.notifier)
+                            .clearFavoriteBookmakerFilter();
+                      },
+                    ),
+                  ),
+                  ...sortedEntries.map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: FilterChip(
+                        selected: favoriteBookmakerKeys.contains(entry.key),
+                        selectedColor: QuantTheme.action.withValues(alpha: 0.3),
+                        checkmarkColor: QuantTheme.textPrimary,
+                        side: BorderSide(
+                          color: favoriteBookmakerKeys.contains(entry.key)
+                              ? QuantTheme.action
+                              : QuantTheme.textMuted.withValues(alpha: 0.65),
+                        ),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 8,
+                              backgroundColor: QuantTheme.surface,
+                              child: Text(
+                                _bookmakerInitials(entry.value),
+                                style: const TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(entry.value),
+                          ],
+                        ),
+                        onSelected: (_) async {
+                          await ref
+                              .read(favoriteBookmakerKeysProvider.notifier)
+                              .toggleFavoriteBookmaker(entry.key);
+                        },
+                      ),
+                    ),
+                  ),
+                ];
+                return SizedBox(
+                  height: 44,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: chips,
+                  ),
+                );
+              },
+              loading: () => const Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              ),
+              error: (error, _) => Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Failed to load sportsbooks: $error'),
+              ),
+            ),
+            const SizedBox(height: 8),
             Row(
               children: [
                 const Text('Sort by'),
@@ -274,8 +391,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: opportunitiesAsync.when(
                 data: (opportunities) {
                   if (opportunities.isEmpty) {
-                    return const Center(
-                      child: Text('No arbitrage opportunities right now.'),
+                    final hasBookFilter = favoriteBookmakerKeys.isNotEmpty;
+                    return Center(
+                      child: Text(
+                        hasBookFilter
+                            ? 'No opportunities match the selected sportsbook pair(s).'
+                            : 'No arbitrage opportunities right now.',
+                      ),
                     );
                   }
                   return ListView.separated(
@@ -424,4 +546,19 @@ class _OpportunitySearchDelegate extends SearchDelegate<ArbOpportunity?> {
       },
     );
   }
+}
+
+String _bookmakerInitials(String title) {
+  final tokens = title
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((token) => token.isNotEmpty)
+      .toList(growable: false);
+  if (tokens.isEmpty) {
+    return '?';
+  }
+  if (tokens.length == 1) {
+    return tokens.first.substring(0, 1).toUpperCase();
+  }
+  return '${tokens[0][0]}${tokens[1][0]}'.toUpperCase();
 }
