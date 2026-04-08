@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:decimal/decimal.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:rational/rational.dart';
@@ -63,10 +66,6 @@ final rawOddsProvider = StreamProvider.autoDispose<List<Map<String, dynamic>>>((
 ) {
   final service = ref.watch(oddsApiServiceProvider);
   return service.watchOdds();
-});
-
-final activeBookmakerKeysProvider = StateProvider<Set<String>>((ref) {
-  return <String>{};
 });
 
 final availableBookmakersByKeyProvider =
@@ -258,7 +257,6 @@ class FavoriteBookmakerKeysNotifier extends AsyncNotifier<Set<String>> {
   Future<Set<String>> build() async {
     final watchlistService = ref.watch(watchlistServiceProvider);
     final localKeys = await watchlistService.loadFavoriteBookmakerKeys();
-    ref.read(activeBookmakerKeysProvider.notifier).state = localKeys;
     final user = ref.watch(authStateChangesProvider).value;
     if (user == null) {
       return localKeys;
@@ -266,7 +264,6 @@ class FavoriteBookmakerKeysNotifier extends AsyncNotifier<Set<String>> {
     final synced = await watchlistService.loadSyncedFavoriteBookmakerKeys(
       uid: user.uid,
     );
-    ref.read(activeBookmakerKeysProvider.notifier).state = synced;
     return synced;
   }
 
@@ -281,16 +278,40 @@ class FavoriteBookmakerKeysNotifier extends AsyncNotifier<Set<String>> {
       next.remove(normalizedKey);
     }
     state = AsyncData(next);
-    ref.read(activeBookmakerKeysProvider.notifier).state = next;
     final watchlistService = ref.read(watchlistServiceProvider);
     await watchlistService.saveFavoriteBookmakerKeys(next);
+    _syncFavoriteBookmakersToCloud(next);
+  }
+
+  Future<void> clearFavoriteBookmakerFilter() async {
+    state = const AsyncData(<String>{});
+    final watchlistService = ref.read(watchlistServiceProvider);
+    await watchlistService.saveFavoriteBookmakerKeys(const <String>{});
+    _syncFavoriteBookmakersToCloud(const <String>{});
+  }
+
+  void _syncFavoriteBookmakersToCloud(Set<String> keys) {
     final user = ref.read(authStateChangesProvider).value;
     if (user == null) {
       return;
     }
-    await watchlistService.saveFavoriteBookmakerKeysForUser(
-      uid: user.uid,
-      keys: next,
+    final watchlistService = ref.read(watchlistServiceProvider);
+    unawaited(
+      watchlistService
+          .saveFavoriteBookmakerKeysForUser(uid: user.uid, keys: keys)
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint('Failed syncing favorite bookmakers: $error');
+            FlutterError.reportError(
+              FlutterErrorDetails(
+                exception: error,
+                stack: stackTrace,
+                library: 'favorite_bookmaker_sync',
+                context: ErrorDescription(
+                  'while syncing favorite bookmaker keys to Firestore',
+                ),
+              ),
+            );
+          }),
     );
   }
 }
@@ -407,27 +428,29 @@ final manualArbCalculatorProvider =
     });
 
 // Provides all of the arb opportunities
-final arbOpportunitiesProvider =
+final allArbOpportunitiesProvider =
     Provider.autoDispose<AsyncValue<List<ArbOpportunity>>>((ref) {
       final oddsAsync = ref.watch(rawOddsProvider);
+      return oddsAsync.whenData(_extractArbOpportunities);
+    });
+
+final arbOpportunitiesProvider =
+    Provider.autoDispose<AsyncValue<List<ArbOpportunity>>>((ref) {
+      final allOpportunitiesAsync = ref.watch(allArbOpportunitiesProvider);
       final sortOption = ref.watch(dashboardSortOptionProvider);
       final favoriteSportKeys =
           ref.watch(favoriteSportKeysProvider).asData?.value ?? <String>{};
-      final persistedBookmakerKeys =
+      final favoriteBookmakerKeys =
           ref.watch(favoriteBookmakerKeysProvider).asData?.value ?? <String>{};
-      final adHocBookmakerKeys = ref.watch(activeBookmakerKeysProvider);
-      final activeBookmakerKeys =
-          (persistedBookmakerKeys.isNotEmpty
-                  ? persistedBookmakerKeys
-                  : adHocBookmakerKeys)
-              .map((key) => key.trim().toLowerCase())
-              .where((key) => key.isNotEmpty)
-              .toSet();
+      final activeBookmakerKeys = favoriteBookmakerKeys
+          .map((key) => key.trim().toLowerCase())
+          .where((key) => key.isNotEmpty)
+          .toSet();
       final favoriteOpportunityIds =
           ref.watch(favoriteOpportunityIdsProvider).asData?.value ?? <String>{};
-      return oddsAsync.whenData((oddsPayload) {
+      return allOpportunitiesAsync.whenData((allOpportunities) {
         final opportunities = _filterOpportunities(
-          opportunities: _extractArbOpportunities(oddsPayload),
+          opportunities: allOpportunities,
           favoriteSportKeys: favoriteSportKeys,
           activeBookmakerKeys: activeBookmakerKeys,
         );
@@ -464,7 +487,7 @@ List<ArbOpportunity> _filterOpportunities({
   return bySport
       .where(
         (opportunity) =>
-            activeBookmakerKeys.contains(opportunity.bookmakerAKey) &&
+            activeBookmakerKeys.contains(opportunity.bookmakerAKey) ||
             activeBookmakerKeys.contains(opportunity.bookmakerBKey),
       )
       .toList(growable: false);
