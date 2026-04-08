@@ -14,13 +14,6 @@ Future<void> main() async {
   await AppConfig.load();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   
-
-
-
-
-
-  
-
   // Initialize Google Sign In for version 7.x
   await GoogleSignIn.instance.initialize(
     clientId: '188999838435-u1dk63enaul40ip75h1cgv6dae3rdcim.apps.googleusercontent.com',

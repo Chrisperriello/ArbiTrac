@@ -394,3 +394,109 @@ Another exception was thrown: [cloud_firestore/permission-denied] Missing or ins
  -- so I think this is why the lsit is getting reset everytime because it is trying to update and cant
  -  Now I also want the favorite sports book to show arb opportunities but if only one of the books match
   not both 
+
+
+  4/8
+  - We have an issue that teh first card is forever loading, it has some weird behaviros, when pressed on it, it will
+go to the ny knicks arb opportunity (using teh mock data), see ~/Desktop/screenshot* to see it. but it is like
+that with real data or mock data 
+
+-  Question: does the first card persist through scrolling i dont have enough data to test it but if i scroll through
+  a buncch of data i want it to sit ontop 
+
+  -  REFACTOR: I want it so that the top one does not exist anymore, just get rid of it an allow for a different
+  section, this will be a scrollable pinned section, it will be on the coloumn so we go down it and it can be
+  collasple able. Let me know if you can do this behavior, it will sit on top and when we are up there it will have
+  the entire list in a collable list. Then if we scroll on the all opportunites then if it is collaplesd then it
+  scrolls like how it does. If it is not then it just resized to a one card window so like if you are mid scroll
+  between two opportunites then it would be like a one card window size thats inbetween them. Its like a window into
+  the collaplsable, let me know if that is to much of a refactor at this point 
+
+
+
+-  I hate it undo all of that last refactor 
+
+
+  - Refactor Specification: Dynamic Sticky Pinned Section
+Goal: Replace the static top header with a collapsible, pinned section that intelligently resizes based on scroll
+position and expansion state.
+
+1. Structural Changes
+Remove: The current static top header/section.
+
+Add: A PinnedSection component positioned at the top of the main vertical column.
+
+Placement: This section must be "Sticky" (pinned) so it stays at the top of the viewport as the user scrolls
+through the "All Opportunities" list.
+
+2. Component States
+State A (Expanded): When at the top of the page (or toggled open), the section displays the entire list of pinned
+items in full.
+
+State B (Collapsed/Minimized): The section collapses into a "One-Card Viewport."
+
+The height should match the height of a single opportunity card.
+This view acts as a "window"—the user can still scroll horizontally or vertically within this small window to see
+other pinned items, but it only takes up the space of one card.
+
+3. Interaction & Scroll Logic
+Expansion Toggle: Allow the user to manually expand/collapse the list.
+
+Auto-Resize on Scroll: * If the user begins scrolling down the "All Opportunities" list while the pinned section
+is Expanded, the pinned section should automatically animate/resize down to the One-Card Viewport (State B).
+
+If the user is "mid-scroll" between items, the pinned section stays fixed as that one-card window, allowing the
+main feed to flow underneath it.
+
+Default Behavior: If already collapsed, the main feed scrolls normally while the pinned "window" remains at the
+top. Logic Flow for the CLI:
+
+Wrap the main list in a ScrollView or FlatList.
+
+Use an Animated.Value tied to the onScroll event of the main list.
+
+Interpolate the scroll position to drive the height of the PinnedSection.
+
+Height Range: [SingleCardHeight, FullListHeight].
+
+
+-  Refactor: Context-Aware Sticky Pinned Section                                                                      
+  Goal: Implement a pinned section that is either completely hidden or dynamically resizes between a "Full View" and 
+  a "One-Card Viewport" based on scroll position.                                                                    
+                                                                                                                     
+  1. Toggle States (Manual)                                                                                          
+  Closed State: The pinned section is completely unmounted or has height: 0. It should not take up any space at the  
+  top of the "All Opportunities" feed.                                                                               
+                                                                                                                     
+  Open State: The pinned section is visible and sits at the top of the main scrollable column.                       
+                                                                                                                     
+  2. Scroll Dynamics (When "Open")                                                                                   
+  At Top (scrollY = 0): The pinned section should be fully expanded, showing the entire list of pinned items (e.g.,  
+  all 10 items).                                                                                                     
+                                                                                                                     
+  On Scroll Down (scrollY > 0): * As the user scrolls into the "All Opportunities" list, the pinned section should   
+  not scroll off-screen.                                                                                             
+                                                                                                                     
+  Instead, it should resize/animate down to a "One-Card Viewport" (the height of a single opportunity card).         
+                                                                                                                     
+  This mini-window remains sticky at the top, acting as a portal to your pinned items while you browse the rest of   
+  the app.                                                                                                           
+                                                                                                                     
+  Interaction within the Window: While in the "One-Card Viewport" mode, the user should still be able to scroll      
+  through the pinned items inside that small window.                                                                 
+                                                                                                                     
+  3. Layout Logic                                                                                                    
+  Persistence: The section must persist at the top of the viewport regardless of how deep the user scrolls into the  
+  main feed.                                                                                                         
+                                                                                                                     
+  Transition: The transition from "Full List" to "One-Card Window" should feel like a collapse/squeeze triggered by  
+  the upward momentum of the main feed. Use an Animated.Value tied to the onScroll event of the main list.           
+                                                                                                                     
+                                                                                                                     
+  Interpolate the scroll position to drive the height of the PinnedSection.                                          
+                                                                                                                     
+  Height Range: [SingleCardHeight, FullListHeight]. MAKE SURE TO TRACK THE HEIGHTS AS IT IS THE ONLY WAY TO          
+  UNDERSTAND WHERE U ARE   
+
+  - It says bottom over flow by 16 pixels make it dynamic for the cards in the pinned 
+  

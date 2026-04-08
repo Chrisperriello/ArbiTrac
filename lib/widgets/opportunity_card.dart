@@ -26,10 +26,6 @@ class CyberOpportunityCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
-    final firstOpportunity = opportunitiesAsync.asData?.value.isNotEmpty == true
-        ? opportunitiesAsync.asData!.value.first
-        : null;
-    final isNewest = firstOpportunity?.favoriteId == opportunity.favoriteId;
     final sameEventOpportunities = opportunitiesAsync.asData?.value
             .where((item) => item.eventId == opportunity.eventId)
             .toList(growable: false) ??
@@ -130,7 +126,7 @@ class CyberOpportunityCard extends ConsumerWidget {
 
     return InkWell(
       onTap: onOpenDetails,
-      child: isNewest ? cyberShimmer(child: card) : card,
+      child: card,
     );
   }
 }

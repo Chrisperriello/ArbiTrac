@@ -262,6 +262,7 @@ This section should be dated and also numbered for prioty (number removed once c
         - [ ] __5.2.1.2: Add-Favorite Modal (The Discovery Overlay)__
             - **UI/UX**: Implement a `showDialog` or `showModalBottomSheet` with a `BackdropFilter` to create a professional blurred-background effect. 
             - **Dynamic Loading**: The modal will populate cards based on the API's full list of supported sports or bookmakers.
+
             - **Add Logic**: Each card in the modal features a "Plus" (+) button. Once pressed, the item is added to the user's active list, and the UI reactively updates the background Settings page via Riverpod.
 
 
