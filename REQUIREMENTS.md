@@ -435,18 +435,19 @@ This section should be dated and also numbered for prioty (number removed once c
         - **Format**: Use a `TabBarView` or conditional rendering to switch the text/examples based on the selected format.
         - Added a new instructional section directly beneath the calculator card with a top-right `SegmentedButton` (American/Decimal) and conditional, mode-specific step guidance.
 
-    - [ ] __5.5.2: 2-Way Market Example (H2H/Moneyline)__
+    - [x] __5.5.2: 2-Way Market Example (H2H/Moneyline)__
         - **Scenario**: NFL - Kansas City Chiefs vs. Buffalo Bills.
-        - [ ] __American Explanation__:
+        - [x] __American Explanation__:
             - **Setup**: Bookie A has Chiefs at `+110`. Bookie B has Bills at `+105`.
             - **Step-by-Step**:
                 1. Set Bookie A sign to `+` and enter `110`.
                 2. Set Bookie B sign to `+` and enter `105`.
                 3. Enter `$100` in Total Investment.
             - **The Result**: App shows an Arb % of ~97.5% (Profitable). It instructs you to bet ~$48.78 on Chiefs and ~$51.22 on Bills for a guaranteed profit regardless of who wins.
-        - [ ] __Decimal Explanation__:
+        - [x] __Decimal Explanation__:
             - **Setup**: Bookie A has Chiefs at `2.10`. Bookie B has Bills at `2.05`.
             - **Step-by-Step**: Follow the same input steps using the decimal fields to achieve a sub-100% total implied probability.
+        - Added mode-specific 2-way NFL examples in the Calculator explainer section with the exact American and Decimal setups, step-by-step inputs, and expected profitable outcome messaging.
 
     - [ ] __5.5.3: 3-Way Market Example (1X2/Soccer)__
         - **Scenario**: Premier League - Liverpool vs. Arsenal (including Draw).

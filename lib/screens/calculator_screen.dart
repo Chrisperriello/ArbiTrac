@@ -133,35 +133,38 @@ class _ManualArbHowToUseSectionState extends State<_ManualArbHowToUseSection> {
           const SizedBox(height: 8),
           if (_selectedMode == _HowToUseMode.american) ...[
             Text(
-              'American mode walkthrough',
+              '2-Way Market Example (H2H/Moneyline) - American',
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 4),
+            const Text('Scenario: NFL - Kansas City Chiefs vs. Buffalo Bills.'),
+            const Text('Setup: Bookie A Chiefs +110, Bookie B Bills +105.'),
+            const SizedBox(height: 4),
+            const Text('1. Set Bookie A sign to + and enter 110.'),
+            const Text('2. Set Bookie B sign to + and enter 105.'),
+            const Text('3. Enter \$100 in Total Investment.'),
+            const Text('Result: Arb % is about 97.5% (profitable).'),
             const Text(
-              '1. Pick + or - for each book, then enter the odds value.',
-            ),
-            const Text(
-              '2. Add 2 legs for H2H, or 3 legs for 1X2-style markets.',
-            ),
-            const Text('3. Enter your total investment amount.'),
-            const Text(
-              '4. Read Arbitrage %, required stakes, guaranteed payout, and net profit.',
+              'Bet about \$48.78 on Chiefs and \$51.22 on Bills for guaranteed profit.',
             ),
           ] else ...[
             Text(
-              'Decimal mode walkthrough',
+              '2-Way Market Example (H2H/Moneyline) - Decimal',
               style: textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 4),
-            const Text('1. Enter decimal odds (must be greater than 1.0).'),
-            const Text('2. Fill in 2 legs or include a 3rd optional leg.'),
-            const Text('3. Enter your total investment amount.'),
+            const Text('Scenario: NFL - Kansas City Chiefs vs. Buffalo Bills.'),
+            const Text('Setup: Bookie A Chiefs 2.10, Bookie B Bills 2.05.'),
+            const SizedBox(height: 4),
+            const Text('1. Enter 2.10 for Bookie A.'),
+            const Text('2. Enter 2.05 for Bookie B.'),
+            const Text('3. Enter \$100 in Total Investment.'),
             const Text(
-              '4. Review the same outputs: Arbitrage %, stakes, payout, and profit.',
+              'Result: the implied probability total is below 100%, so this is profitable.',
             ),
           ],
         ],
