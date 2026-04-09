@@ -449,23 +449,25 @@ This section should be dated and also numbered for prioty (number removed once c
             - **Step-by-Step**: Follow the same input steps using the decimal fields to achieve a sub-100% total implied probability.
         - Added mode-specific 2-way NFL examples in the Calculator explainer section with the exact American and Decimal setups, step-by-step inputs, and expected profitable outcome messaging.
 
-    - [ ] __5.5.3: 3-Way Market Example (1X2/Soccer)__
+    - [x] __5.5.3: 3-Way Market Example (1X2/Soccer)__
         - **Scenario**: Premier League - Liverpool vs. Arsenal (including Draw).
-        - [ ] __American Explanation__:
+        - [x] __American Explanation__:
             - **Setup**: Bookie A (Liverpool) at `+150`. Bookie B (Draw) at `+250`. Bookie C (Arsenal) at `+280`.
             - **Step-by-Step**:
                 1. Enter Bookie A: `+150`.
                 2. Enter Bookie B: `+250`.
                 3. Enter Bookie C: `+280`.
             - **The Result**: Logic calculates the sum of reciprocal odds. If the sum is < 1.0, the app highlights "Profitable Opportunity" and provides the 3-way stake breakdown to cover all three outcomes.
-        - [ ] __Decimal Explanation__:
+        - [x] __Decimal Explanation__:
             - **Setup**: Bookie A: `2.50`. Bookie B: `3.50`. Bookie C: `3.80`.
             - **Calculation**: $1/2.5 + 1/3.5 + 1/3.8 = 0.40 + 0.28 + 0.26 = 0.94$ (6% Profit Margin).
+        - Added full 3-way soccer examples in both American and Decimal explainer modes, including setup values, ordered steps, and outcome/calculation guidance.
 
-    - [ ] __5.5.4: UI Components & Styling__
+    - [x] __5.5.4: UI Components & Styling__
         - **Visual Hierarchy**: Use how we use themes before for the background and `*.action` for step headers (1, 2, 3).
         - **Step Cards**: Use a `Stepper` widget or a vertical list of custom cards to make the "Step-by-Step" instructions scannable.
         - **Mathematical Callouts**: Include a "Pro Tip" box explaining the core logic: *“If the total implied probability is less than 100%, you have found an arbitrage.”*
+        - Refactored the Calculator explainer into themed custom step cards with `QuantTheme.action` step-number headers, preserved themed panel hierarchy, and added a dedicated Pro Tip callout box with the implied-probability rule.
 
 
 
