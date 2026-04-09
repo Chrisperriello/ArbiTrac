@@ -249,7 +249,7 @@ This section should be dated and also numbered for prioty (number removed once c
         - Added a dashboard sportsbook chip row beneath pinned sports with a leading "Select All" toggle, high-contrast active chip styling from `QuantTheme`, and reactive Riverpod-driven updates tied to persisted bookmaker preferences.
 
         
-- [ ] __5.2: Settings expanded__:
+- [x] __5.2: Settings expanded__:
     *Goal: Transform the basic settings into a granular control center for user preferences and app aesthetics, utilizing a tabbed layout for improved navigation.*
 
     - [x] __5.2.1: Settings Tabbed Layout (Favorites Hub)__
@@ -269,7 +269,7 @@ This section should be dated and also numbered for prioty (number removed once c
             - Added a blurred `showDialog` add-favorite overlay for sports/books with provider-backed dynamic lists and per-item add actions that update favorites immediately.
 
 
-    - [ ] __5.2.2: Universal Theme Engine & Refactor__
+    - [x] __5.2.2: Universal Theme Engine & Refactor__
         - **Theme Centralization**: Refactor `lib/theme.dart` into a "Theme Registry." Instead of simple variables, create a class that defines distinct `ThemeData` objects for each mode:
             - **Dark Mode**: High-contrast blacks/greys for night betting.
             - **Quant Mode**: A clean, data-heavy "Bloomberg-style" aesthetic.
@@ -278,6 +278,7 @@ This section should be dated and also numbered for prioty (number removed once c
             - **UI**: In the "Theme" tab of Settings, implement a `DropdownButtonFormField` or a series of `RadioListTile` widgets displaying the available theme names.
             - **State Management**: Connect the selection to a `ThemeNotifier` (Riverpod) that wraps the `MaterialApp`'s `theme` property.
             - **Persistence**: Ensure the selected theme ID is saved to `shared_preferences` so the user's aesthetic preference persists across app restarts.
+        - Implemented `AppThemeRegistry` + `AppThemeId` in `lib/theme.dart`, `appThemeSelectionProvider` persistence in Riverpod, `MaterialApp` theme wiring in `main.dart`, and Theme tab `RadioListTile` selector persistence in Settings.
         
 - [ ] __5.3: API limitation calling__:
     Purpose: If we are filtering based on sports books and classes

@@ -501,3 +501,17 @@ Height Range: [SingleCardHeight, FullListHeight].
   - It says bottom over flow by 16 pixels make it dynamic for the cards in the pinned 
   
   -  continue to 5.2.1 
+  -  continue 5.2.2 
+
+  -  Can you refactor opportunitey card as well to fit changing themes 
+
+
+  -  Make the popup show up ABOVE the profile icon 
+  -
+   Can it load from bottom to top instead from top to botton 
+
+  -  No i meant the actual loading like when it appears on screen it starts by
+  loading at the top and then loads down 
+  - Now for the settings can we give a little bit more space on the top row of the
+settigns like expand the space and size of the "Settings" to pushg the tabs
+down a little and not overlap 
