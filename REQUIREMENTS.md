@@ -410,12 +410,13 @@ This section should be dated and also numbered for prioty (number removed once c
                 - **Feedback**: Show a "Success" `SnackBar` once the key is successfully verified and stored.
         - Added a third Settings tab (`API Keys`, `Icons.vpn_key`) with an OddsAPI section, obscured key input + eye toggle, 32-character format validation, secure-device persistence via `flutter_secure_storage`, runtime `AppConfig` key override for immediate OddsApiService usage, and success/error `SnackBar` feedback.
 
-    - [ ] __5.4.2: Infrastructure Integration__
+    - [x] __5.4.2: Infrastructure Integration__
         - **Refactor Config Service**: Modify the current configuration logic to prioritize the user-entered key from secure storage.
         - **Hierarchy of Credentials**:
             1. Check `flutter_secure_storage` for a user-provided key.
             2. If empty, fallback to the hardcoded key in `./assets/.env`.
         - **File Management (Dev Only)**: While assets are read-only in production, ensure the local development environment includes a script or utility to sync these values to the `.env` file for local testing consistency.
+        - `AppConfig.load(...)` now accepts a secure-storage key and prioritizes it over `.env` with strict format validation; `main.dart` initializes config using secure-storage first; and a dev utility (`tool/sync_odds_api_key.dart`) plus README commands now support syncing local OddsAPI keys into `.env`.
 
     - [ ] __5.4.3: API Health & Quota Monitor (Expanded)__
         - **Key Validation**: Upon saving, perform a "handshake" call to the OddsAPI (e.g., a simple `/sports` request). If the API returns a `401 Unauthorized`, notify the user immediately and do not save the key.
