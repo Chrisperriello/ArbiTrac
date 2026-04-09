@@ -281,32 +281,26 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                     ? QuantTheme.action
                                     : QuantTheme.textMuted.withValues(alpha: 0.65),
                               ),
-                              label: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  CircleAvatar(
-                                    radius: avatarRadius,
-                                    backgroundColor: QuantTheme.surface,
-                                    child: Text(
-                                      _bookmakerInitials(entry.value),
-                                      style: TextStyle(
-                                        fontSize: 9,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
+                              avatar: CircleAvatar(
+                                radius: avatarRadius,
+                                backgroundColor: QuantTheme.surface,
+                                child: Text(
+                                  _bookmakerInitials(entry.value),
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  const SizedBox(width: 6),
-                                  ConstrainedBox(
-                                    constraints: BoxConstraints(
-                                      maxWidth: MediaQuery.sizeOf(context).width * 0.4,
-                                    ),
-                                    child: Text(
-                                      entry.value,
-                                      overflow: TextOverflow.ellipsis,
-                                      softWrap: false,
-                                    ),
-                                  ),
-                                ],
+                                ),
+                              ),
+                              label: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxWidth: MediaQuery.sizeOf(context).width * 0.32,
+                                ),
+                                child: Text(
+                                  entry.value,
+                                  overflow: TextOverflow.ellipsis,
+                                  softWrap: false,
+                                ),
                               ),
                               onSelected: (_) async {
                                 await ref

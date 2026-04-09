@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../providers/providers.dart';
 import '../services/services.dart';
-import 'dashboard_screen.dart';
+import 'main_layout_shell.dart';
 import 'username_screen.dart';
 
 //Stateful widget class
@@ -64,9 +64,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      String displayName = email;
       try {
-        displayName = await userProfileService.loadDisplayName(
+        await userProfileService.loadDisplayName(
           uid: user.uid,
           fallbackEmail: user.email ?? email,
         );
@@ -86,9 +85,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
       Navigator.of(context).pushNamedAndRemoveUntil(
-        DashboardScreen.routeName,
+        MainLayoutShell.routeName,
         (route) => false,
-        arguments: displayName,
       );
     } on AuthServiceException catch (error) {
       if (!mounted) {
@@ -128,17 +126,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      String displayName = user.displayName ?? user.email ?? 'User';
       try {
         // Try to load existing profile, otherwise initialize for new user
-        displayName = await userProfileService.loadDisplayName(
+        await userProfileService.loadDisplayName(
           uid: user.uid,
           fallbackEmail: user.email ?? '',
         );
       } catch (e) {
         // If profile doesn't exist, initialize it
         try {
-          displayName = await userProfileService.initializeForNewUser(
+          await userProfileService.initializeForNewUser(
             uid: user.uid,
             email: user.email ?? '',
           );
@@ -147,9 +144,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
-        DashboardScreen.routeName,
+        MainLayoutShell.routeName,
         (route) => false,
-        arguments: displayName,
       );
     } on AuthServiceException catch (error) {
       if (!mounted) return;

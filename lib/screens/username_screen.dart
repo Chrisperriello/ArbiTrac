@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../providers/providers.dart';
-import 'dashboard_screen.dart';
+import 'main_layout_shell.dart';
 
 
 //Consumer Widget to set someones username 
@@ -63,9 +63,8 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
       if (!mounted) return;
       
       Navigator.of(context).pushNamedAndRemoveUntil(
-        DashboardScreen.routeName,
+        MainLayoutShell.routeName,
         (route) => false,
-        arguments: username,
       );
     } catch (e) {
       if (!mounted) return;
