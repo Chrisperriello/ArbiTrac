@@ -6,11 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/quant_theme.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
-import '../services/services.dart';
 import '../widgets/opportunity_card.dart';
 import 'calculator_screen.dart';
-import 'main_screen.dart';
-import 'settings_screen.dart';
 import 'sports_event_detail_screen.dart';
 
 //Dashboard Screen
@@ -31,7 +28,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
-    final usernameAsync = ref.watch(currentUserDisplayNameProvider);
     final sortOption = ref.watch(dashboardSortOptionProvider);
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
     final favoritesAsync = ref.watch(favoriteOpportunityIdsProvider);
@@ -65,73 +61,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: PopupMenuButton<String>(
-          tooltip: 'Account',
-          onSelected: (value) async {
-            if (value == 'settings') {
-              Navigator.of(context).pushNamed(SettingsScreen.routeName);
-              return;
-            }
-            if (value == 'signout') {
-              final authService = ref.read(authServiceProvider);
-              try {
-                await authService.signOut();
-                if (!context.mounted) {
-                  return;
-                }
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                  MainScreen.routeName,
-                  (route) => false,
-                );
-              } on AuthServiceException catch (error) {
-                if (!context.mounted) {
-                  return;
-                }
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text(error.message)));
-              }
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              enabled: false,
-              child: usernameAsync.when(
-                data: (username) => Text(
-                  username,
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                loading: () => const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                error: (_, stackTrace) => const Text('User'),
-              ),
-            ),
-            const PopupMenuItem<String>(
-              value: 'settings',
-              child: Row(
-                children: [
-                  Icon(Icons.settings_outlined),
-                  SizedBox(width: 8),
-                  Text('Settings'),
-                ],
-              ),
-            ),
-            const PopupMenuItem<String>(
-              value: 'signout',
-              child: Row(
-                children: [
-                  Icon(Icons.logout),
-                  SizedBox(width: 8),
-                  Text('Sign out'),
-                ],
-              ),
-            ),
-          ],
-          icon: const Icon(Icons.account_circle_outlined),
-        ),
         title: const Text('Dashboard'),
         actions: [
           IconButton(
@@ -286,6 +215,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: Text('No sportsbooks available yet.'),
                         );
                       }
+                      final textScale = MediaQuery.textScalerOf(context).scale(1);
+                      final chipVerticalPadding = ((textScale - 1) * 3).clamp(
+                        0.0,
+                        3.0,
+                      );
+                      final avatarRadius = (8 + ((textScale - 1) * 2)).clamp(
+                        8.0,
+                        11.0,
+                      );
                       final sortedEntries =
                           bookmakersByKey.entries.toList(growable: false)
                             ..sort((a, b) {
@@ -309,6 +247,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           child: FilterChip(
                             selected: selectAllSelected,
                             label: const Text('Select All'),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: chipVerticalPadding,
+                            ),
                             selectedColor: QuantTheme.action.withValues(alpha: 0.3),
                             checkmarkColor: QuantTheme.textPrimary,
                             side: BorderSide(
@@ -328,6 +270,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             padding: const EdgeInsets.only(right: 8),
                             child: FilterChip(
                               selected: favoriteBookmakerKeys.contains(entry.key),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: chipVerticalPadding,
+                              ),
                               selectedColor: QuantTheme.action.withValues(alpha: 0.3),
                               checkmarkColor: QuantTheme.textPrimary,
                               side: BorderSide(
@@ -339,18 +285,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   CircleAvatar(
-                                    radius: 8,
+                                    radius: avatarRadius,
                                     backgroundColor: QuantTheme.surface,
                                     child: Text(
                                       _bookmakerInitials(entry.value),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(entry.value),
+                                  ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: MediaQuery.sizeOf(context).width * 0.4,
+                                    ),
+                                    child: Text(
+                                      entry.value,
+                                      overflow: TextOverflow.ellipsis,
+                                      softWrap: false,
+                                    ),
+                                  ),
                                 ],
                               ),
                               onSelected: (_) async {
@@ -362,12 +317,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         ),
                       ];
-                      return SizedBox(
-                        height: 44,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: chips,
-                        ),
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(children: chips),
                       );
                     },
                     loading: () => const Align(
