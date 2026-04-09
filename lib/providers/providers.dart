@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../theme.dart';
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../services/services.dart';
@@ -119,6 +120,29 @@ enum ManualArbOddsFormat { decimal, american }
 
 enum ManualArbAmericanSign { plus, minus }
 
+final appThemeSelectionProvider =
+    AsyncNotifierProvider<AppThemeSelectionNotifier, AppThemeId>(
+      AppThemeSelectionNotifier.new,
+    );
+
+class AppThemeSelectionNotifier extends AsyncNotifier<AppThemeId> {
+  static const String _themeSelectionKey = 'app_theme_selection_v1';
+
+  @override
+  Future<AppThemeId> build() async {
+    final preferences = await SharedPreferences.getInstance();
+    final storedTheme = preferences.getString(_themeSelectionKey);
+    return AppThemeIdX.fromStorageValue(storedTheme);
+  }
+
+  Future<void> setTheme(AppThemeId themeId) async {
+    state = AsyncData(themeId);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setString(_themeSelectionKey, themeId.storageValue);
+  }
+}
+
+@Deprecated('Use appThemeSelectionProvider instead.')
 final appThemeModeProvider = AsyncNotifierProvider<AppThemeModeNotifier, bool>(
   AppThemeModeNotifier.new,
 );

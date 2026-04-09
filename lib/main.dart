@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'core/config/app_config.dart';
-import 'core/theme/quant_theme.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
+import 'theme.dart';
 
 //Async function for updates
 Future<void> main() async {
@@ -38,12 +38,13 @@ class _AppRoot extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkModeAsync = ref.watch(appThemeModeProvider);
-    final isDarkMode = isDarkModeAsync.asData?.value ?? true;
+    final selectedThemeAsync = ref.watch(appThemeSelectionProvider);
+    final selectedTheme = selectedThemeAsync.asData?.value ?? AppThemeId.quant;
+    final themeData = AppThemeRegistry.resolve(selectedTheme);
     return MaterialApp(
-      theme: QuantTheme.theme,
-      darkTheme: QuantTheme.theme,
-      themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      theme: themeData,
+      darkTheme: themeData,
+      themeMode: ThemeMode.dark,
       home: const AuthGate(),
       routes: {
         //Routes for the main pages

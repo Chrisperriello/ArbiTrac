@@ -2,12 +2,9 @@ import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../core/theme/cyber_arb_theme.dart';
-import '../core/theme/quant_theme.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
 import 'cyber_animations.dart';
-import 'cyber_borders.dart';
 
 class CyberOpportunityCard extends ConsumerWidget {
   const CyberOpportunityCard({
@@ -25,6 +22,11 @@ class CyberOpportunityCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final mutedTextColor = theme.textTheme.bodySmall?.color?.withValues(
+      alpha: 0.8,
+    );
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
     final sameEventOpportunities = opportunitiesAsync.asData?.value
             .where((item) => item.eventId == opportunity.eventId)
@@ -43,11 +45,22 @@ class CyberOpportunityCard extends ConsumerWidget {
     final stalenessSeconds = DateTime.now()
         .difference(opportunity.lastUpdatedAt)
         .inSeconds;
-    final freshnessColor = stalenessSeconds > 15
-        ? QuantTheme.warning
-        : QuantTheme.action;
+    final freshnessColor = stalenessSeconds > 45
+        ? colorScheme.error
+        : stalenessSeconds > 15
+        ? colorScheme.tertiary
+        : colorScheme.primary;
+    final borderColor = profitPercent >= 3
+        ? colorScheme.primary
+        : profitPercent >= 1
+        ? colorScheme.secondary
+        : colorScheme.outline.withValues(alpha: 0.65);
     final card = Container(
-      decoration: cyberArbOpportunityDecoration(profitPercent: profitPercent),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: borderColor),
+      ),
       padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -64,7 +77,7 @@ class CyberOpportunityCard extends ConsumerWidget {
                 onPressed: onFavoritePressed,
                 icon: Icon(
                   isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
-                  color: isFavorite ? QuantTheme.action : null,
+                  color: isFavorite ? colorScheme.primary : null,
                 ),
               ),
             ],
@@ -73,7 +86,7 @@ class CyberOpportunityCard extends ConsumerWidget {
             'Books ${opportunity.bookmakerA}/${opportunity.bookmakerB}',
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: CyberArbTheme.textMuted),
+            ).textTheme.bodySmall?.copyWith(color: mutedTextColor),
           ),
           const SizedBox(height: 6),
           Text(
@@ -82,7 +95,7 @@ class CyberOpportunityCard extends ConsumerWidget {
                 : 'Highest reward market: ${topMarket.$1} (${_formatPercent(topMarket.$2)}%)',
             style: Theme.of(
               context,
-            ).textTheme.bodySmall?.copyWith(color: QuantTheme.textMuted),
+            ).textTheme.bodySmall?.copyWith(color: mutedTextColor),
           ),
           if (positiveMarketsByBestProfit.isNotEmpty)
             Text(
@@ -90,20 +103,14 @@ class CyberOpportunityCard extends ConsumerWidget {
               '${positiveMarketsByBestProfit.map((entry) => '${entry.$1} (${_formatPercent(entry.$2)}%)').join(', ')}',
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: QuantTheme.textMuted),
+              ).textTheme.bodySmall?.copyWith(color: mutedTextColor),
             ),
           const SizedBox(height: 6),
           Row(
             children: [
               Text(
                 '${_formatPercent(displayPercent)}%',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: profitPercent >= 3
-                      ? QuantTheme.profit
-                      : profitPercent >= 1
-                      ? QuantTheme.action
-                      : QuantTheme.textMuted,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(color: borderColor),
               ),
               const SizedBox(width: 10),
               Text(

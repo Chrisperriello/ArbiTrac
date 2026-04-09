@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/providers.dart';
+import '../theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -29,12 +30,17 @@ class _SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
   const _SettingsAppBar();
 
   @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight + 48);
+  Size get preferredSize => const Size.fromHeight(132);
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      title: const Text('Settings'),
+      toolbarHeight: 84,
+      titleSpacing: 20,
+      title: Text(
+        'Settings',
+        style: Theme.of(context).textTheme.headlineSmall,
+      ),
       bottom: const TabBar(
         tabs: [
           Tab(text: 'Favorites', icon: Icon(Icons.star_outline)),
@@ -229,20 +235,32 @@ class _ThemeSettingsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDarkModeAsync = ref.watch(appThemeModeProvider);
+    final selectedThemeAsync = ref.watch(appThemeSelectionProvider);
+    final selectedTheme = selectedThemeAsync.asData?.value ?? AppThemeId.quant;
     return ListView(
       children: [
-        SwitchListTile(
-          title: const Text('Dark mode'),
-          subtitle: const Text('Save theme preference on this device'),
-          value: isDarkModeAsync.asData?.value ?? false,
-          onChanged: isDarkModeAsync.isLoading
-              ? null
-              : (enabled) async {
-                  await ref
-                      .read(appThemeModeProvider.notifier)
-                      .setDarkMode(enabled);
-                },
+        const ListTile(
+          title: Text('Theme mode'),
+          subtitle: Text('Choose and save your app theme'),
+        ),
+        RadioGroup<AppThemeId>(
+          groupValue: selectedTheme,
+          onChanged: (nextTheme) {
+            if (selectedThemeAsync.isLoading || nextTheme == null) {
+              return;
+            }
+            ref.read(appThemeSelectionProvider.notifier).setTheme(nextTheme);
+          },
+          child: Column(
+            children: AppThemeId.values
+                .map(
+                  (themeId) => RadioListTile<AppThemeId>(
+                    title: Text(themeId.displayName),
+                    value: themeId,
+                  ),
+                )
+                .toList(growable: false),
+          ),
         ),
       ],
     );
