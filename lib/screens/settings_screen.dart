@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_config.dart';
 import '../providers/providers.dart';
+import '../services/services.dart';
 import '../theme.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -283,6 +284,7 @@ class _ApiKeysSettingsTabState extends ConsumerState<_ApiKeysSettingsTab> {
   final TextEditingController _oddsApiKeyController = TextEditingController();
   bool _obscureOddsApiKey = true;
   bool _isSaving = false;
+  String? _remainingRequests;
 
   @override
   void initState() {
@@ -297,8 +299,7 @@ class _ApiKeysSettingsTabState extends ConsumerState<_ApiKeysSettingsTab> {
   }
 
   Future<void> _loadSavedOddsApiKey() async {
-    final secureStorage = ref.read(secureStorageServiceProvider);
-    final savedKey = await secureStorage.readOddsApiKey();
+    final savedKey = await ref.read(oddsApiKeyProvider.future);
     if (!mounted || savedKey == null || savedKey.trim().isEmpty) {
       return;
     }
@@ -332,15 +333,58 @@ class _ApiKeysSettingsTabState extends ConsumerState<_ApiKeysSettingsTab> {
       _isSaving = true;
     });
     try {
-      final secureStorage = ref.read(secureStorageServiceProvider);
-      await secureStorage.saveOddsApiKey(normalizedKey);
-      AppConfig.setRuntimeOddsApiKey(normalizedKey);
+      final oddsApiService = ref.read(oddsApiServiceProvider);
+      final handshake = await oddsApiService.validateApiKey(normalizedKey);
+      if (handshake.isUnauthorized) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _remainingRequests = handshake.remainingRequests;
+        });
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('OddsAPI rejected this key (401 Unauthorized).'),
+          ),
+        );
+        return;
+      }
+      if (!handshake.isSuccess) {
+        if (!mounted) {
+          return;
+        }
+        setState(() {
+          _remainingRequests = handshake.remainingRequests;
+        });
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Could not verify OddsAPI key (status ${handshake.statusCode}).',
+            ),
+          ),
+        );
+        return;
+      }
+      setState(() {
+        _remainingRequests = handshake.remainingRequests;
+      });
+      await ref.read(oddsApiKeyProvider.notifier).setKey(normalizedKey);
       if (!mounted) {
         return;
       }
       messenger.showSnackBar(
         const SnackBar(content: Text('OddsAPI key updated successfully.')),
       );
+    } on OddsApiServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      messenger.showSnackBar(SnackBar(content: Text(error.message)));
+    } on ArgumentError catch (error) {
+      if (!mounted) {
+        return;
+      }
+      messenger.showSnackBar(SnackBar(content: Text(error.message.toString())));
     } finally {
       if (mounted) {
         setState(() {
@@ -392,6 +436,11 @@ class _ApiKeysSettingsTabState extends ConsumerState<_ApiKeysSettingsTab> {
                   ),
                 ),
                 const SizedBox(height: 12),
+                Text(
+                  'Remaining Requests: ${_remainingRequests ?? '--'}',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                const SizedBox(height: 8),
                 Align(
                   alignment: Alignment.centerRight,
                   child: FilledButton.icon(

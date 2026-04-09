@@ -25,6 +25,7 @@ class OddsApiService {
     SharedPreferences? preferences,
     this.cacheTtl = const Duration(minutes: 5),
     this.refreshInterval = const Duration(minutes: 5),
+    this.apiKeyOverride,
     http.Client? client,
   }) : _preferences = preferences,
        _client = client ?? http.Client();
@@ -32,6 +33,7 @@ class OddsApiService {
   final SharedPreferences? _preferences;
   final Duration cacheTtl;
   final Duration refreshInterval;
+  final String? apiKeyOverride;
   final http.Client _client;
 
   void _log(String message) {}
@@ -116,6 +118,25 @@ class OddsApiService {
       final refreshed = await fetchOdds(sportKey: sportKey, forceRefresh: true);
       _log('watchOdds emit cycle #$cycle: ${refreshed.length} events');
       yield refreshed;
+    }
+  }
+
+  Future<OddsApiHandshakeResult> validateApiKey(String apiKey) async {
+    final trimmed = apiKey.trim();
+    final uri = Uri.https('api.the-odds-api.com', '/v4/sports', {
+      'apiKey': trimmed,
+      'all': 'true',
+    });
+    try {
+      final response = await _client.get(uri);
+      return OddsApiHandshakeResult(
+        statusCode: response.statusCode,
+        remainingRequests: response.headers['x-requests-remaining'],
+      );
+    } catch (_) {
+      throw const OddsApiServiceException(
+        'Could not reach OddsAPI. Check your network and try again.',
+      );
     }
   }
 
@@ -256,6 +277,10 @@ class OddsApiService {
   }
 
   String? _readOddsApiKey() {
+    final override = apiKeyOverride?.trim();
+    if (override != null && override.isNotEmpty) {
+      return override;
+    }
     try {
       return AppConfig.oddsApiKey;
     } catch (_) {
@@ -454,4 +479,18 @@ class OddsApiServiceException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class OddsApiHandshakeResult {
+  const OddsApiHandshakeResult({
+    required this.statusCode,
+    required this.remainingRequests,
+  });
+
+  final int statusCode;
+  final String? remainingRequests;
+
+  bool get isUnauthorized => statusCode == 401;
+
+  bool get isSuccess => statusCode >= 200 && statusCode < 300;
 }

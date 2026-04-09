@@ -9,13 +9,15 @@ import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme.dart';
+import '../core/config/app_config.dart';
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 
 //gets the oddsApi, it gives the apr is scope
 final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
-  return OddsApiService();
+  final oddsApiKey = ref.watch(oddsApiKeyProvider).asData?.value;
+  return OddsApiService(apiKeyOverride: oddsApiKey);
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -33,6 +35,39 @@ final watchlistServiceProvider = Provider<WatchlistService>((ref) {
 final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
   return SecureStorageService();
 });
+
+final oddsApiKeyProvider = AsyncNotifierProvider<OddsApiKeyNotifier, String?>(
+  OddsApiKeyNotifier.new,
+);
+
+class OddsApiKeyNotifier extends AsyncNotifier<String?> {
+  @override
+  Future<String?> build() async {
+    final secureStorage = ref.watch(secureStorageServiceProvider);
+    final storedKey = await secureStorage.readOddsApiKey();
+    if (storedKey == null || !AppConfig.isValidOddsApiKeyFormat(storedKey)) {
+      return null;
+    }
+    final normalized = storedKey.trim();
+    AppConfig.setRuntimeOddsApiKey(normalized);
+    return normalized;
+  }
+
+  Future<void> setKey(String key) async {
+    final normalized = key.trim();
+    if (!AppConfig.isValidOddsApiKeyFormat(normalized)) {
+      throw ArgumentError.value(
+        key,
+        'key',
+        'Odds API key must be a 32-character alphanumeric string.',
+      );
+    }
+    final secureStorage = ref.read(secureStorageServiceProvider);
+    await secureStorage.saveOddsApiKey(normalized);
+    AppConfig.setRuntimeOddsApiKey(normalized);
+    state = AsyncData(normalized);
+  }
+}
 
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   final authService = ref.watch(authServiceProvider);
