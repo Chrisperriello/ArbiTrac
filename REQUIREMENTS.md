@@ -257,14 +257,16 @@ This section should be dated and also numbered for prioty (number removed once c
         - **The Favorites Tab**: Organize this view into two distinct, vertically scrollable sections: "Favorite Sports" and "Favorite Books."
         - **Section Layout**: Each section will feature a header with a "Plus" (+) action button to trigger the addition workflow.
         - Implemented `DefaultTabController` settings shell with Favorites/Theme tabs, vertically scrollable favorites sections, and section header add actions.
-        - [ ] __5.2.1.1: Setting Favorite Card Component__
+        - [x] __5.2.1.1: Setting Favorite Card Component__
             - **Visual Design**: A streamlined, low-profile `Card` widget displaying the name of the entity (Sport or Bookmaker).
             - **Interaction**: Include a trailing "Minus" (-) or "Trash" icon button. When pressed, it triggers the removal logic from both `shared_preferences` and `Firestore`.
-        - [ ] __5.2.1.2: Add-Favorite Modal (The Discovery Overlay)__
+            - Implemented `_SettingFavoriteCard` low-profile cards with trailing remove buttons wired to the existing Riverpod favorite toggles (local + Firestore sync path).
+        - [x] __5.2.1.2: Add-Favorite Modal (The Discovery Overlay)__
             - **UI/UX**: Implement a `showDialog` or `showModalBottomSheet` with a `BackdropFilter` to create a professional blurred-background effect. 
             - **Dynamic Loading**: The modal will populate cards based on the API's full list of supported sports or bookmakers.
 
             - **Add Logic**: Each card in the modal features a "Plus" (+) button. Once pressed, the item is added to the user's active list, and the UI reactively updates the background Settings page via Riverpod.
+            - Added a blurred `showDialog` add-favorite overlay for sports/books with provider-backed dynamic lists and per-item add actions that update favorites immediately.
 
 
     - [ ] __5.2.2: Universal Theme Engine & Refactor__

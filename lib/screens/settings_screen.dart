@@ -1,3 +1,6 @@
+
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -52,15 +55,23 @@ class _FavoritesSettingsTab extends ConsumerWidget {
     final favoriteBookmakerKeysAsync = ref.watch(favoriteBookmakerKeysProvider);
     final bookmakersByKeyAsync = ref.watch(availableBookmakersByKeyProvider);
 
-    final favoriteSportLabels = _labelsFromKeys(
-      keys: favoriteSportKeysAsync.asData?.value ?? const <String>{},
-      labelsByKey: sportsByKeyAsync.asData?.value ?? const <String, String>{},
+    final favoriteSportKeys =
+        favoriteSportKeysAsync.asData?.value ?? const <String>{};
+    final favoriteBookmakerKeys =
+        favoriteBookmakerKeysAsync.asData?.value ?? const <String>{};
+    final sportsByKey = sportsByKeyAsync.asData?.value ?? const <String, String>{};
+    final bookmakersByKey =
+        bookmakersByKeyAsync.asData?.value ?? const <String, String>{};
+    final favoriteSportItems = _itemsFromKeys(
+      keys: favoriteSportKeys,
+      labelsByKey: sportsByKey,
     );
-    final favoriteBookLabels = _labelsFromKeys(
-      keys: favoriteBookmakerKeysAsync.asData?.value ?? const <String>{},
-      labelsByKey:
-          bookmakersByKeyAsync.asData?.value ?? const <String, String>{},
+    final favoriteBookItems = _itemsFromKeys(
+      keys: favoriteBookmakerKeys,
+      labelsByKey: bookmakersByKey,
     );
+    final allSportItems = _itemsFromMap(sportsByKey);
+    final allBookItems = _itemsFromMap(bookmakersByKey);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -70,8 +81,29 @@ class _FavoritesSettingsTab extends ConsumerWidget {
           _FavoritesSection(
             title: 'Favorite Sports',
             addTooltip: 'Add favorite sport',
-            onAddPressed: () => _showStepNotice(context, 'sport'),
-            items: favoriteSportLabels,
+            onAddPressed: () {
+              _showAddFavoriteModal(
+                context: context,
+                title: 'Add favorite sport',
+                loading:
+                    favoriteSportKeysAsync.isLoading || sportsByKeyAsync.isLoading,
+                hasError:
+                    favoriteSportKeysAsync.hasError || sportsByKeyAsync.hasError,
+                items: allSportItems,
+                selectedKeys: favoriteSportKeys,
+                onAddPressed: (item) async {
+                  await ref
+                      .read(favoriteSportKeysProvider.notifier)
+                      .toggleFavoriteSport(item.key);
+                },
+              );
+            },
+            items: favoriteSportItems,
+            onRemovePressed: (item) async {
+              await ref
+                  .read(favoriteSportKeysProvider.notifier)
+                  .toggleFavoriteSport(item.key);
+            },
             loading:
                 favoriteSportKeysAsync.isLoading || sportsByKeyAsync.isLoading,
             error:
@@ -81,8 +113,31 @@ class _FavoritesSettingsTab extends ConsumerWidget {
           _FavoritesSection(
             title: 'Favorite Books',
             addTooltip: 'Add favorite sportsbook',
-            onAddPressed: () => _showStepNotice(context, 'sportsbook'),
-            items: favoriteBookLabels,
+            onAddPressed: () {
+              _showAddFavoriteModal(
+                context: context,
+                title: 'Add favorite sportsbook',
+                loading:
+                    favoriteBookmakerKeysAsync.isLoading ||
+                    bookmakersByKeyAsync.isLoading,
+                hasError:
+                    favoriteBookmakerKeysAsync.hasError ||
+                    bookmakersByKeyAsync.hasError,
+                items: allBookItems,
+                selectedKeys: favoriteBookmakerKeys,
+                onAddPressed: (item) async {
+                  await ref
+                      .read(favoriteBookmakerKeysProvider.notifier)
+                      .toggleFavoriteBookmaker(item.key);
+                },
+              );
+            },
+            items: favoriteBookItems,
+            onRemovePressed: (item) async {
+              await ref
+                  .read(favoriteBookmakerKeysProvider.notifier)
+                  .toggleFavoriteBookmaker(item.key);
+            },
             loading:
                 favoriteBookmakerKeysAsync.isLoading ||
                 bookmakersByKeyAsync.isLoading,
@@ -102,6 +157,7 @@ class _FavoritesSection extends StatelessWidget {
     required this.addTooltip,
     required this.onAddPressed,
     required this.items,
+    required this.onRemovePressed,
     required this.loading,
     required this.error,
   });
@@ -109,7 +165,8 @@ class _FavoritesSection extends StatelessWidget {
   final String title;
   final String addTooltip;
   final VoidCallback onAddPressed;
-  final List<String> items;
+  final List<_FavoriteEntityItem> items;
+  final Future<void> Function(_FavoriteEntityItem item) onRemovePressed;
   final bool loading;
   final bool error;
 
@@ -153,10 +210,11 @@ class _FavoritesSection extends StatelessWidget {
               )
             else
               ...items.map(
-                (item) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(item),
+                (item) => _SettingFavoriteCard(
+                  item: item,
+                  onRemovePressed: () async {
+                    await onRemovePressed(item);
+                  },
                 ),
               ),
           ],
@@ -191,24 +249,173 @@ class _ThemeSettingsTab extends ConsumerWidget {
   }
 }
 
-List<String> _labelsFromKeys({
+class _SettingFavoriteCard extends StatelessWidget {
+  const _SettingFavoriteCard({
+    required this.item,
+    required this.onRemovePressed,
+  });
+
+  final _FavoriteEntityItem item;
+  final Future<void> Function() onRemovePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: ListTile(
+        dense: true,
+        title: Text(item.label),
+        trailing: IconButton(
+          tooltip: 'Remove',
+          onPressed: onRemovePressed,
+          icon: const Icon(Icons.remove_circle_outline),
+        ),
+      ),
+    );
+  }
+}
+
+class _FavoriteEntityItem {
+  const _FavoriteEntityItem({required this.key, required this.label});
+
+  final String key;
+  final String label;
+}
+
+List<_FavoriteEntityItem> _itemsFromKeys({
   required Set<String> keys,
   required Map<String, String> labelsByKey,
 }) {
-  final labels = keys
-      .map((key) => labelsByKey[key] ?? key)
-      .where((label) => label.trim().isNotEmpty)
+  final items = keys
+      .map((key) => _FavoriteEntityItem(key: key, label: labelsByKey[key] ?? key))
+      .where((item) => item.label.trim().isNotEmpty)
       .toList(growable: false);
-  labels.sort();
-  return labels;
+  items.sort((a, b) => a.label.compareTo(b.label));
+  return items;
 }
 
-void _showStepNotice(BuildContext context, String typeLabel) {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        'Add-$typeLabel flow is next (Step 5.2.1.2).',
-      ),
-    ),
+List<_FavoriteEntityItem> _itemsFromMap(Map<String, String> labelsByKey) {
+  final items = labelsByKey.entries
+      .where((entry) => entry.key.trim().isNotEmpty)
+      .map((entry) => _FavoriteEntityItem(key: entry.key, label: entry.value))
+      .toList(growable: false);
+  items.sort((a, b) => a.label.compareTo(b.label));
+  return items;
+}
+
+Future<void> _showAddFavoriteModal({
+  required BuildContext context,
+  required String title,
+  required bool loading,
+  required bool hasError,
+  required List<_FavoriteEntityItem> items,
+  required Set<String> selectedKeys,
+  required Future<void> Function(_FavoriteEntityItem item) onAddPressed,
+}) async {
+  final selected = Set<String>.from(selectedKeys);
+  await showDialog<void>(
+    context: context,
+    barrierColor: Colors.black.withValues(alpha: 0.35),
+    builder: (dialogContext) {
+      return StatefulBuilder(
+        builder: (context, setModalState) {
+          return Stack(
+            children: [
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: const SizedBox.expand(),
+                ),
+              ),
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 520, maxHeight: 560),
+                  child: Material(
+                    color: Theme.of(context).colorScheme.surface,
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                              ),
+                              IconButton(
+                                tooltip: 'Close',
+                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                icon: const Icon(Icons.close),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: loading
+                                ? const Center(child: CircularProgressIndicator())
+                                : hasError
+                                ? const Center(
+                                    child: Text(
+                                      'Could not load available items right now.',
+                                    ),
+                                  )
+                                : items.isEmpty
+                                ? const Center(
+                                    child: Text('No items available to add yet.'),
+                                  )
+                                : ListView.separated(
+                                    itemCount: items.length,
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(height: 8),
+                                    itemBuilder: (context, index) {
+                                      final item = items[index];
+                                      final alreadySelected = selected.contains(
+                                        item.key,
+                                      );
+                                      return Card(
+                                        elevation: 0,
+                                        margin: EdgeInsets.zero,
+                                        child: ListTile(
+                                          title: Text(item.label),
+                                          trailing: IconButton(
+                                            tooltip: alreadySelected
+                                                ? 'Already added'
+                                                : 'Add',
+                                            onPressed: alreadySelected
+                                                ? null
+                                                : () async {
+                                                    await onAddPressed(item);
+                                                    setModalState(() {
+                                                      selected.add(item.key);
+                                                    });
+                                                  },
+                                            icon: Icon(
+                                              alreadySelected
+                                                  ? Icons.check_circle
+                                                  : Icons.add_circle_outline,
+                                            ),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    },
   );
 }
