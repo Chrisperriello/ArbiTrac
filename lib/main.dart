@@ -13,10 +13,11 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.load();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  
+
   // Initialize Google Sign In for version 7.x
   await GoogleSignIn.instance.initialize(
-    clientId: '188999838435-u1dk63enaul40ip75h1cgv6dae3rdcim.apps.googleusercontent.com',
+    clientId:
+        '188999838435-u1dk63enaul40ip75h1cgv6dae3rdcim.apps.googleusercontent.com',
   );
 
   runApp(const ProviderScope(child: MainApp()));
@@ -28,10 +29,8 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const _AppRoot();
-    
   }
 }
-
 
 class _AppRoot extends ConsumerWidget {
   const _AppRoot();
@@ -45,6 +44,8 @@ class _AppRoot extends ConsumerWidget {
       theme: themeData,
       darkTheme: themeData,
       themeMode: ThemeMode.dark,
+      themeAnimationDuration: const Duration(microseconds: 10),
+      //themeAnimationCurve: Curves.elasticIn,
       home: const AuthGate(),
       routes: {
         //Routes for the main pages
