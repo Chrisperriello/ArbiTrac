@@ -515,3 +515,10 @@ Height Range: [SingleCardHeight, FullListHeight].
   - Now for the settings can we give a little bit more space on the top row of the
 settigns like expand the space and size of the "Settings" to pushg the tabs
 down a little and not overlap 
+4/9 
+- Contine to 5.3 readit then start 5.3.0 
+-  Change 5.3.0 and all subsquent steps, rust will not be rounding it will just be 
+  doing the risk caculation, the UI gets the total invesntmetn then calulates how 
+  much to spend where and then will be sent to the rust backend with all other    
+  needed paramters and will return the the global number that the UI will map to  
+  the bars if that makes sense  

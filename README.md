@@ -76,6 +76,12 @@ ArbiTrac doesn't just "guess." It uses a rigorous mathematical approach:
 3.  Configure Firebase using `flutterfire configure`.
 4.  Execute `flutter run`.
 
+### Rust Bridge (Phase 5.3)
+1. Install Rust (`cargo`) and keep Flutter/Dart SDK available in your shell.
+2. Install the FRB generator CLI once: `cargo install flutter_rust_bridge_codegen`.
+3. Regenerate Flutter Rust Bridge bindings whenever Rust risk API signatures change:
+   `flutter_rust_bridge_codegen generate --rust-root rust --rust-input crate::api --dart-output lib/src/rust --c-output rust/frb_generated.h`
+
 ---
 
 ## ⚖️ Legal & Risk

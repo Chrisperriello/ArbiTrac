@@ -280,89 +280,38 @@ This section should be dated and also numbered for prioty (number removed once c
             - **Persistence**: Ensure the selected theme ID is saved to `shared_preferences` so the user's aesthetic preference persists across app restarts.
         - Implemented `AppThemeRegistry` + `AppThemeId` in `lib/theme.dart`, `appThemeSelectionProvider` persistence in Riverpod, `MaterialApp` theme wiring in `main.dart`, and Theme tab `RadioListTile` selector persistence in Settings.
         
-
-
-- [ ] __5.3: Anti-Limitation caught system__
-    **Goal**: Implement "Stealth Mode" rails to guide users in avoiding detection by sportsbook algorithms, effectively mimicking recreational betting behavior to prevent account limiting.
-
-    - [ ] __5.3.1: Settings__
-        - Add a new tab in settings called **Anti-limitation**.
-        - Implement a master "Stealth Mode" switch that toggles the entire protection suite on/off.
-        - Include a descriptive header explaining that this mode rounds stakes and monitors "Account Heat" to protect the user's longevity.
-        - [ ] __5.3.1.1: Opportunities Card Info Edit__
-            - When Stealth Mode is active, all suggested stakes in the Arb Opportunity cards must be rounded to the nearest 5 or 10 using the `Decimal` package.
-            - Integrate a **Risk Monitor** on the right side of the card that appears once an investment amount is entered.
-            - The monitor features 10 rounded vertical bars that fill based on the calculated risk level:
-                - **1-2 Bars (Dark Green)**: "Low Risk"
-                - **3-4 Bars (Light Green)**: "Low to Moderate Risk"
-                - **5-6 Bars (Yellow)**: "Moderate Risk"
-                - **7-8 Bars (Orange)**: "Moderate to High Risk"
-                - **9-10 Bars (Red)**: "High Risk"
-
-        - [ ] __5.3.1.2: Config__
-            - Create input fields that must be configured once Stealth Mode is enabled:
-                - **Average (arbitrage) bets per day**
-                - **Number of books being used**
-                - **Number of sports usually bet**
-            - **Data Persistence**: These configurations must be saved to both `shared_preferences` and `Firebase Firestore` (under `users/{uid}/preferences/stealth`).
-            - Implement a "Save" button to commit changes.
-            - Ensure fields auto-populate with the last saved values even if the mode is toggled off and back on.
-
-    - [ ] __5.3.2: Risk Calculation__
-        - Implement a standardized risk-scoring system to translate live data into a **Global Risk Score ($G$)** from 0 to 100.
-        - [ ] __5.3.2.1: Factor Mapping__
-            - **Arb Percent ($A$)**:
-                - $\le 2\% \rightarrow 10$ | $3\% \rightarrow 30$ | $4-5\% \rightarrow 50$ | $6\% \rightarrow 80$ | $> 6\% \rightarrow 100$
-            - **Sports Count ($N$)**: (Based on user config)
-                - $\le 2 \rightarrow 10$ | $3 \rightarrow 20$ | $4 \rightarrow 40$ | $5 \rightarrow 60$ | $6 \rightarrow 70$ | $> 6 \rightarrow 100$
-        - [ ] __5.3.2.2: Market Risk Average ($M$)__
-            - Calculate the weighted arithmetic mean for the selected market types:
-            - $$M = \frac{\sum (m_i \cdot w_i)}{\sum w_i}$$
-            - **Constants (Risk $m$, Weight $w$)**:
-                - **Moneyline**: $10, 1$
-                - **Main Totals/Handicaps/Spread**: $30, 2$
-                - **Small Market Totals/Handicaps**: $80, 4$ (Small market = anything outside major leagues like NBA, NFL, MLB, etc.)
-        - [ ] __5.3.2.3: Global Score to Level Mapping__
-            - Calculate Global Score: $$G = \frac{A + N + M}{3}$$
-            - **1/10 Level Mapping**:
-                - $0-10 \rightarrow 1/10$ | $11-20 \rightarrow 2/10$ | $21-30 \rightarrow 3/10$ | $31-40 \rightarrow 4/10$
-                - $41-50 \rightarrow 5/10$ | $51-60 \rightarrow 6/10$ | $61-70 \rightarrow 7/10$ | $71-80 \rightarrow 8/10$
-                - $81-90 \rightarrow 9/10$ | $91-100 \rightarrow 10/10$
-
-    - [ ] __5.3.3: UI & Dash Integration__
-        - **Live Updates**: As the user types in the "Total Investment" field, the 10-bar monitor must update reactively.
-        - **Dashboard Health Dash**: Add a "Daily Risk Health" gauge to the main dashboard header to show the average risk of all bets placed/viewed that day.
-        - **Animations**: Use an `AnimationController` to make the active bars "pulse" and "glow" with their specific color. The pulsation frequency should increase as the risk moves from Green to Red.
            
 
-
 - [ ] __5.3: Anti-Limitation Caught System__
-    **Goal**: Implement "Stealth Mode" rails to guide users in avoiding detection by sportsbook algorithms, effectively mimicking recreational betting behavior to prevent account limiting. All risk calculations are handled by a Rust native library (`arb_stealth_engine`) exposed to Flutter via `flutter_rust_bridge`. Flutter is responsible for UI and state only. Rust owns every calculation.
+    **Goal**: Implement "Stealth Mode" rails to guide users in avoiding detection by sportsbook algorithms, effectively mimicking recreational betting behavior to prevent account limiting. Risk scoring is handled by a Rust native library (`arb_stealth_engine`) exposed to Flutter via `flutter_rust_bridge`. Flutter owns stake calculation and UI rendering; Rust returns risk outputs only.
 
     **Architecture**:
-    - A Rust crate lives at `rust/` in the project root. It exposes a single public entry point: `compute_risk(RiskInput) -> RiskOutput` and a `round_stake(raw_stake, granularity) -> Decimal`.
+    - A Rust crate lives at `rust/` in the project root. It exposes a public risk entry point: `compute_risk(RiskInput) -> RiskOutput`.
     - `flutter_rust_bridge` (v2) generates type-safe Dart bindings from annotated Rust `pub fn` signatures. No manual FFI glue.
-    - Dart never performs risk math directly. All numeric outputs (rounded stakes, factor scores, global score, bar level) are values returned from Rust calls.
+    - Dart computes stake distribution from total investment and odds (existing arb engine/UI flow), then sends risk inputs to Rust and maps the returned risk level to bars/colors.
 
-    - [ ] __5.3.0: Rust Bridge Setup__
+    - [x] __5.3.0: Rust Bridge Setup__
         - Add `flutter_rust_bridge` and `flutter_rust_bridge_codegen` to the project.
         - Initialize the Rust crate at `rust/` with `cargo init --lib` and set `crate-type = ["cdylib", "staticlib"]` in `Cargo.toml`.
-        - Add `flutter_rust_bridge = "2"` and `rust_decimal = "1"` as Rust dependencies. `rust_decimal` replaces the Dart `Decimal` package for all stealth math.
+        - Add `flutter_rust_bridge = "2"` as a Rust dependency.
         - Run the codegen step to produce the `lib/src/rust/` bindings directory. Add this directory to `.gitignore` and document the regeneration command in `README.md`.
         - Set up the folder structure inside the Rust crate:
             - `rust/src/lib.rs` — bridge entry point
-            - `rust/src/rounding.rs` — stake rounding logic
+            - `rust/src/api.rs` — FRB-exposed bridge functions
             - `rust/src/risk.rs` — all scoring: A, N, M, G, and level mapping
         - Verify the bridge is live with a trivial `pub fn ping() -> String` smoke test before proceeding to any other 5.3 steps.
+        - Implemented `rust/` crate scaffolding with `api.rs` FRB entrypoints (`ping`, `compute_risk`), generated bindings under `lib/src/rust/`, and added a Rust unit smoke test asserting `ping() == "pong"`.
 
     - [ ] __5.3.1: Settings__
         - Add a new **"Anti-Limitation"** tab to the existing `DefaultTabController` in Settings (alongside Favorites and Theme).
         - Implement a master "Stealth Mode" `Switch` tile at the top of the tab.
-        - Include a descriptive subtitle: *"Rounds stakes and monitors Account Heat to extend your account longevity."*
+        - Include a descriptive subtitle: *"Monitors Account Heat using risk scoring to extend your account longevity."*
         - The config fields in 5.3.1.2 are gated behind this switch and should be disabled when Stealth Mode is off.
 
         - [ ] __5.3.1.1: Opportunities Card Info Edit__
-            - When Stealth Mode is active, all suggested stakes displayed on Arb Opportunity cards must be replaced with Rust-rounded values. Dart calls `stealthBridge.roundStake(rawStake: x, granularity: n)` where granularity is pulled from the user's saved config (5.3.1.2). Rounding is performed in `rounding.rs` using `rust_decimal` for exact arithmetic.
+            - When Stealth Mode is active, stake suggestions remain UI-calculated from total investment + odds using the Dart arb engine.
+            - When Stealth Mode is active, the UI stake calculator must round each suggested stake to the nearest configured increment (5 or 10).
+            - After stake calculation, Dart sends risk inputs (including the computed stake context and other user settings) into `stealthBridge.computeRisk(...)`; Rust returns risk output only.
             - Integrate a **Risk Monitor** widget on the right side of each card. It renders 10 rounded vertical bars whose filled count and color are driven entirely by the `level` integer (1–10) returned from the Rust `compute_risk` call. The widget itself is display-only and performs no math.
             - Bar color mapping (use constants from `theme.dart`):
                 - **1–2 Bars (Dark Green)**: "Low Risk"
@@ -376,7 +325,7 @@ This section should be dated and also numbered for prioty (number removed once c
                 - **Average (arbitrage) bets per day** (integer)
                 - **Number of books being used** (integer)
                 - **Number of sports usually bet** (integer)
-                - **Rounding granularity** (dropdown: 5 or 10)
+                - **Stake rounding increment** (dropdown: 5 or 10)
             - **Data Persistence**: These configurations must be saved to both `shared_preferences` and Firebase Firestore (under `users/{uid}/preferences/stealth`).
             - Implement a "Save" button to commit changes.
             - Ensure fields auto-populate with the last saved values even if the mode is toggled off and back on.
@@ -388,6 +337,10 @@ This section should be dated and also numbered for prioty (number removed once c
             ```rust
             pub struct RiskInput {
                 pub arb_percent: f64,
+                pub total_investment: f64,
+                pub stake_distribution: Vec<f64>,
+                pub bets_per_day: u32,
+                pub books_count: u32,
                 pub sports_count: u32,
                 pub market_types: Vec<MarketType>,
             }
@@ -431,9 +384,9 @@ This section should be dated and also numbered for prioty (number removed once c
             - Write unit tests for `compute_risk` directly in the Rust crate using `cargo test` covering boundary values for each step function.
 
     - [ ] __5.3.3: UI & Dash Integration__
-        - The Dart layer collects inputs, calls `stealthBridge.computeRisk(input)`, and passes the returned `RiskOutput` struct into pure display widgets. No math occurs on the Dart side.
+        - The Dart layer calculates stake distribution first from total investment + odds, then calls `stealthBridge.computeRisk(input)` and passes the returned `RiskOutput` struct into pure display widgets.
 
-        - **Live Updates**: Wire the "Total Investment" `TextEditingController` on each Arb card to a `StateProvider<double>`. A `ref.watch` on that provider triggers a re-call to `computeRisk`. Because the Rust function is sync, updates are instantaneous with no loading state.
+        - **Live Updates**: Wire the "Total Investment" `TextEditingController` on each Arb card to a `StateProvider<double>`. A `ref.watch` on that provider triggers UI stake recomputation and then a re-call to `computeRisk`. Because the Rust function is sync, updates are instantaneous with no loading state.
         - **Dashboard Health Gauge**: Add a "Daily Risk Health" widget to the main dashboard header showing the average `globalScore` across all opportunities viewed that session. Session scores are accumulated in a `StateNotifierProvider<List<double>>` and averaged in Dart — no Rust call required for this aggregation.
         - **Animations**: Use an `AnimationController` per Risk Monitor widget (disposed in `State.dispose`).
             - Active bars pulse via a `TweenSequence` on opacity: `1.0 → 0.6 → 1.0`.
