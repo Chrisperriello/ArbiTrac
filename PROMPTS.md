@@ -515,3 +515,6 @@ Height Range: [SingleCardHeight, FullListHeight].
   - Now for the settings can we give a little bit more space on the top row of the
 settigns like expand the space and size of the "Settings" to pushg the tabs
 down a little and not overlap 
+
+-  Read 5.4 and start with 5.4.1 \
+

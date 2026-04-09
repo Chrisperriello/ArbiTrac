@@ -282,59 +282,9 @@ This section should be dated and also numbered for prioty (number removed once c
         
 
 
-- [ ] __5.3: Anti-Limitation caught system__
-    **Goal**: Implement "Stealth Mode" rails to guide users in avoiding detection by sportsbook algorithms, effectively mimicking recreational betting behavior to prevent account limiting.
 
-    - [ ] __5.3.1: Settings__
-        - Add a new tab in settings called **Anti-limitation**.
-        - Implement a master "Stealth Mode" switch that toggles the entire protection suite on/off.
-        - Include a descriptive header explaining that this mode rounds stakes and monitors "Account Heat" to protect the user's longevity.
-        - [ ] __5.3.1.1: Opportunities Card Info Edit__
-            - When Stealth Mode is active, all suggested stakes in the Arb Opportunity cards must be rounded to the nearest 5 or 10 using the `Decimal` package.
-            - Integrate a **Risk Monitor** on the right side of the card that appears once an investment amount is entered.
-            - The monitor features 10 rounded vertical bars that fill based on the calculated risk level:
-                - **1-2 Bars (Dark Green)**: "Low Risk"
-                - **3-4 Bars (Light Green)**: "Low to Moderate Risk"
-                - **5-6 Bars (Yellow)**: "Moderate Risk"
-                - **7-8 Bars (Orange)**: "Moderate to High Risk"
-                - **9-10 Bars (Red)**: "High Risk"
 
-        - [ ] __5.3.1.2: Config__
-            - Create input fields that must be configured once Stealth Mode is enabled:
-                - **Average (arbitrage) bets per day**
-                - **Number of books being used**
-                - **Number of sports usually bet**
-            - **Data Persistence**: These configurations must be saved to both `shared_preferences` and `Firebase Firestore` (under `users/{uid}/preferences/stealth`).
-            - Implement a "Save" button to commit changes.
-            - Ensure fields auto-populate with the last saved values even if the mode is toggled off and back on.
-
-    - [ ] __5.3.2: Risk Calculation__
-        - Implement a standardized risk-scoring system to translate live data into a **Global Risk Score ($G$)** from 0 to 100.
-        - [ ] __5.3.2.1: Factor Mapping__
-            - **Arb Percent ($A$)**:
-                - $\le 2\% \rightarrow 10$ | $3\% \rightarrow 30$ | $4-5\% \rightarrow 50$ | $6\% \rightarrow 80$ | $> 6\% \rightarrow 100$
-            - **Sports Count ($N$)**: (Based on user config)
-                - $\le 2 \rightarrow 10$ | $3 \rightarrow 20$ | $4 \rightarrow 40$ | $5 \rightarrow 60$ | $6 \rightarrow 70$ | $> 6 \rightarrow 100$
-        - [ ] __5.3.2.2: Market Risk Average ($M$)__
-            - Calculate the weighted arithmetic mean for the selected market types:
-            - $$M = \frac{\sum (m_i \cdot w_i)}{\sum w_i}$$
-            - **Constants (Risk $m$, Weight $w$)**:
-                - **Moneyline**: $10, 1$
-                - **Main Totals/Handicaps/Spread**: $30, 2$
-                - **Small Market Totals/Handicaps**: $80, 4$ (Small market = anything outside major leagues like NBA, NFL, MLB, etc.)
-        - [ ] __5.3.2.3: Global Score to Level Mapping__
-            - Calculate Global Score: $$G = \frac{A + N + M}{3}$$
-            - **1/10 Level Mapping**:
-                - $0-10 \rightarrow 1/10$ | $11-20 \rightarrow 2/10$ | $21-30 \rightarrow 3/10$ | $31-40 \rightarrow 4/10$
-                - $41-50 \rightarrow 5/10$ | $51-60 \rightarrow 6/10$ | $61-70 \rightarrow 7/10$ | $71-80 \rightarrow 8/10$
-                - $81-90 \rightarrow 9/10$ | $91-100 \rightarrow 10/10$
-
-    - [ ] __5.3.3: UI & Dash Integration__
-        - **Live Updates**: As the user types in the "Total Investment" field, the 10-bar monitor must update reactively.
-        - **Dashboard Health Dash**: Add a "Daily Risk Health" gauge to the main dashboard header to show the average risk of all bets placed/viewed that day.
-        - **Animations**: Use an `AnimationController` to make the active bars "pulse" and "glow" with their specific color. The pulsation frequency should increase as the risk moves from Green to Red.
-           
-
+  
 
 - [ ] __5.3: Anti-Limitation Caught System__
     **Goal**: Implement "Stealth Mode" rails to guide users in avoiding detection by sportsbook algorithms, effectively mimicking recreational betting behavior to prevent account limiting. All risk calculations are handled by a Rust native library (`arb_stealth_engine`) exposed to Flutter via `flutter_rust_bridge`. Flutter is responsible for UI and state only. Rust owns every calculation.
@@ -441,7 +391,42 @@ This section should be dated and also numbered for prioty (number removed once c
             - Use a `ColorTween` between the bar's assigned color and its 30%-lightened variant for the glow effect.
 
 
-- [ ] __5.4: API limitation calling__
+
+
+- [ ] __5.4: API Key Management & Integration__
+    **Goal**: Provide a secure, user-facing interface to manage external API credentials, allowing for dynamic key updates without requiring a full app rebuild.
+
+    - [x] __5.4.1: Settings - API Keys Tab__
+        - Add a third tab to the `DefaultTabController` in the Settings screen titled **API Keys** using the `Icons.vpn_key` icon.
+        - Implement a specialized **OddsAPI** configuration section.
+        - [x] __5.4.1.1: Secure Input Field__
+            - Create a `TextField` for the OddsAPI key with a "Privacy Toggle."
+            - **Functionality**: Use `obscureText: true` by default. Add a `suffixIcon` with an "eye" (IconButton) that toggles the visibility of the key.
+            - **Validation**: Implement a basic check to ensure the key string is not empty and matches the expected length/format of an OddsAPI key before allowing a save.
+        - [x] __5.4.1.2: Save & Sync Action__
+            - Add an "Update Key" button that triggers the following logic:
+                - **Primary Storage**: Save the key to `flutter_secure_storage` (per Requirement 1.3) to ensure sensitive credentials are encrypted on the device hardware.
+                - **Dynamic Environment Update**: Update the in-memory `Config` class so that the `OddsApiService` immediately begins using the new key without requiring a restart.
+                - **Feedback**: Show a "Success" `SnackBar` once the key is successfully verified and stored.
+        - Added a third Settings tab (`API Keys`, `Icons.vpn_key`) with an OddsAPI section, obscured key input + eye toggle, 32-character format validation, secure-device persistence via `flutter_secure_storage`, runtime `AppConfig` key override for immediate OddsApiService usage, and success/error `SnackBar` feedback.
+
+    - [ ] __5.4.2: Infrastructure Integration__
+        - **Refactor Config Service**: Modify the current configuration logic to prioritize the user-entered key from secure storage.
+        - **Hierarchy of Credentials**:
+            1. Check `flutter_secure_storage` for a user-provided key.
+            2. If empty, fallback to the hardcoded key in `./assets/.env`.
+        - **File Management (Dev Only)**: While assets are read-only in production, ensure the local development environment includes a script or utility to sync these values to the `.env` file for local testing consistency.
+
+    - [ ] __5.4.3: API Health & Quota Monitor (Expanded)__
+        - **Key Validation**: Upon saving, perform a "handshake" call to the OddsAPI (e.g., a simple `/sports` request). If the API returns a `401 Unauthorized`, notify the user immediately and do not save the key.
+        - **Quota Display**: Beneath the text field, add a small text indicator showing the "Remaining Requests" returned by the API's header (e.g., `x-requests-remaining`).
+        - **Service Injection**: Update the `oddsApiServiceProvider` (Riverpod) to listen to the secure storage provider, ensuring the service is always "watching" for key changes.
+
+
+
+
+
+- [ ] __5.5: API limitation calling__
     Purpose: If we are filtering based on sports books and classes
     - We want api calls to only call sports that are saved as favorites, so only lines for NBA if that is the only favorite
     - WE want api call to only call for the books that the filter has as filtered books
