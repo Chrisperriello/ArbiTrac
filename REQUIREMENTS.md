@@ -418,10 +418,11 @@ This section should be dated and also numbered for prioty (number removed once c
         - **File Management (Dev Only)**: While assets are read-only in production, ensure the local development environment includes a script or utility to sync these values to the `.env` file for local testing consistency.
         - `AppConfig.load(...)` now accepts a secure-storage key and prioritizes it over `.env` with strict format validation; `main.dart` initializes config using secure-storage first; and a dev utility (`tool/sync_odds_api_key.dart`) plus README commands now support syncing local OddsAPI keys into `.env`.
 
-    - [ ] __5.4.3: API Health & Quota Monitor (Expanded)__
+    - [x] __5.4.3: API Health & Quota Monitor (Expanded)__
         - **Key Validation**: Upon saving, perform a "handshake" call to the OddsAPI (e.g., a simple `/sports` request). If the API returns a `401 Unauthorized`, notify the user immediately and do not save the key.
         - **Quota Display**: Beneath the text field, add a small text indicator showing the "Remaining Requests" returned by the API's header (e.g., `x-requests-remaining`).
         - **Service Injection**: Update the `oddsApiServiceProvider` (Riverpod) to listen to the secure storage provider, ensuring the service is always "watching" for key changes.
+        - Added save-time OddsAPI handshake validation with explicit 401 rejection, displayed `Remaining Requests` from response headers in the API key settings card, and introduced `oddsApiKeyProvider` so `oddsApiServiceProvider` reactively rebuilds from secure-storage-backed key changes.
 
 
 
