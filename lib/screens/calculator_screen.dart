@@ -33,26 +33,23 @@ class CalculatorScreen extends ConsumerWidget {
                   filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                   child: Container(
                     width: 560,
-                    constraints: const BoxConstraints(maxWidth: 560),
+                    constraints: BoxConstraints(
+                      maxWidth: 560,
+                      maxHeight: MediaQuery.sizeOf(context).height - 110,
+                    ),
                     decoration: cyberGlassPanelDecoration(),
                     padding: const EdgeInsets.all(10),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const ManualArbCalculatorCard(),
-                        const SizedBox(height: 10),
-                        const _ManualArbHowToUseSection(),
-                        if (result != null) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            'Guaranteed Profit: \$${_fixed(result.netProfit)}',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(color: QuantTheme.profit),
-                            textAlign: TextAlign.right,
-                          ),
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const ManualArbCalculatorCard(),
+
+                          const SizedBox(height: 10),
+                          const _ManualArbHowToUseSection(),
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 ),
