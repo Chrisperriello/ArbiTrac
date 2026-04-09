@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:decimal/decimal.dart';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,9 +34,7 @@ class OddsApiService {
   final Duration refreshInterval;
   final http.Client _client;
 
-  void _log(String message) {
-    debugPrint('[OddsApiService] $message');
-  }
+  void _log(String message) {}
 
   Future<List<Map<String, dynamic>>> fetchSports({
     bool forceRefresh = false,
@@ -244,7 +241,9 @@ class OddsApiService {
     }
   }
 
-  List<Map<String, dynamic>> _mergeEventsById(List<Map<String, dynamic>> events) {
+  List<Map<String, dynamic>> _mergeEventsById(
+    List<Map<String, dynamic>> events,
+  ) {
     final byId = <String, Map<String, dynamic>>{};
     for (final event in events) {
       final eventId = event['id'] as String?;
@@ -258,7 +257,6 @@ class OddsApiService {
 
   String? _readOddsApiKey() {
     try {
-      _log(AppConfig.oddsApiKey);
       return AppConfig.oddsApiKey;
     } catch (_) {
       return null;

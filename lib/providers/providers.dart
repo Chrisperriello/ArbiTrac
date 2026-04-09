@@ -30,6 +30,10 @@ final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
 });
 
+final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
+  return SecureStorageService();
+});
+
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   final authService = ref.watch(authServiceProvider);
   return authService.authStateChanges;
@@ -324,7 +328,6 @@ class FavoriteBookmakerKeysNotifier extends AsyncNotifier<Set<String>> {
       watchlistService
           .saveFavoriteBookmakerKeysForUser(uid: user.uid, keys: keys)
           .catchError((Object error, StackTrace stackTrace) {
-            debugPrint('Failed syncing favorite bookmakers: $error');
             FlutterError.reportError(
               FlutterErrorDetails(
                 exception: error,

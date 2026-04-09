@@ -6,12 +6,19 @@ import 'core/config/app_config.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
+import 'services/services.dart';
 import 'theme.dart';
 
 //Async function for updates
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppConfig.load();
+  final secureStorage = SecureStorageService();
+  final storedOddsApiKey = await secureStorage.readOddsApiKey();
+  if (storedOddsApiKey != null &&
+      AppConfig.isValidOddsApiKeyFormat(storedOddsApiKey)) {
+    AppConfig.setRuntimeOddsApiKey(storedOddsApiKey);
+  }
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize Google Sign In for version 7.x
