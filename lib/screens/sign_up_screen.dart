@@ -30,10 +30,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!mounted) {
       return;
     }
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      MainScreen.routeName,
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(MainScreen.routeName, (route) => false);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text(
@@ -61,11 +60,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _isSubmitting = true);
 
-
     try {
       final authService = ref.read(authServiceProvider);
       final userProfileService = ref.read(userProfileServiceProvider);
-      //Sign up 
+      //Sign up
       final credential = await authService.signUpWithEmail(
         email: email,
         password: password,
@@ -80,7 +78,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
           uid: user.uid,
           email: user.email ?? email,
         );
-      } on FirebaseException{
+      } on FirebaseException {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -95,10 +93,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        UsernameScreen.routeName,
-        (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(UsernameScreen.routeName, (route) => false);
     } on AuthServiceException catch (error) {
       if (error.message.contains('already exists')) {
         _routeToMainWithExistingAccountMessage();
@@ -154,10 +151,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        UsernameScreen.routeName,
-        (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(UsernameScreen.routeName, (route) => false);
     } on AuthServiceException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(

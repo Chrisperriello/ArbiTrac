@@ -9,13 +9,15 @@ import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../theme.dart';
+import '../core/config/app_config.dart';
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../services/services.dart';
 
 //gets the oddsApi, it gives the apr is scope
 final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
-  return OddsApiService();
+  final oddsApiKey = ref.watch(oddsApiKeyProvider).asData?.value;
+  return OddsApiService(apiKeyOverride: oddsApiKey);
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -29,6 +31,43 @@ final userProfileServiceProvider = Provider<UserProfileService>((ref) {
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
 });
+
+final secureStorageServiceProvider = Provider<SecureStorageService>((ref) {
+  return SecureStorageService();
+});
+
+final oddsApiKeyProvider = AsyncNotifierProvider<OddsApiKeyNotifier, String?>(
+  OddsApiKeyNotifier.new,
+);
+
+class OddsApiKeyNotifier extends AsyncNotifier<String?> {
+  @override
+  Future<String?> build() async {
+    final secureStorage = ref.watch(secureStorageServiceProvider);
+    final storedKey = await secureStorage.readOddsApiKey();
+    if (storedKey == null || !AppConfig.isValidOddsApiKeyFormat(storedKey)) {
+      return null;
+    }
+    final normalized = storedKey.trim();
+    AppConfig.setRuntimeOddsApiKey(normalized);
+    return normalized;
+  }
+
+  Future<void> setKey(String key) async {
+    final normalized = key.trim();
+    if (!AppConfig.isValidOddsApiKeyFormat(normalized)) {
+      throw ArgumentError.value(
+        key,
+        'key',
+        'Odds API key must be a 32-character alphanumeric string.',
+      );
+    }
+    final secureStorage = ref.read(secureStorageServiceProvider);
+    await secureStorage.saveOddsApiKey(normalized);
+    AppConfig.setRuntimeOddsApiKey(normalized);
+    state = AsyncData(normalized);
+  }
+}
 
 final authStateChangesProvider = StreamProvider<User?>((ref) {
   final authService = ref.watch(authServiceProvider);
@@ -324,7 +363,6 @@ class FavoriteBookmakerKeysNotifier extends AsyncNotifier<Set<String>> {
       watchlistService
           .saveFavoriteBookmakerKeysForUser(uid: user.uid, keys: keys)
           .catchError((Object error, StackTrace stackTrace) {
-            debugPrint('Failed syncing favorite bookmakers: $error');
             FlutterError.reportError(
               FlutterErrorDetails(
                 exception: error,
@@ -653,7 +691,73 @@ List<ArbOpportunity> _extractArbOpportunities(
     }
   }
 
-  return opportunities;
+  return _deduplicateArbOpportunities(opportunities);
+}
+
+List<ArbOpportunity> _deduplicateArbOpportunities(
+  List<ArbOpportunity> opportunities,
+) {
+  final byIdentity = <String, ArbOpportunity>{};
+  for (final opportunity in opportunities) {
+    final identityKey = _arbOpportunityIdentityKey(opportunity);
+    final existing = byIdentity[identityKey];
+    if (existing == null ||
+        _isPreferredOpportunityCandidate(opportunity, existing)) {
+      byIdentity[identityKey] = opportunity;
+    }
+  }
+  return byIdentity.values.toList(growable: false);
+}
+
+String _arbOpportunityIdentityKey(ArbOpportunity opportunity) {
+  final normalizedSport = opportunity.sportKey.trim().toLowerCase();
+  final normalizedMatchup = _normalizedMatchup(opportunity.eventName);
+  final kickoffEpochMillis = opportunity.commenceTime
+      .toUtc()
+      .millisecondsSinceEpoch;
+  final normalizedBooks = [
+    opportunity.bookmakerAKey.trim().toLowerCase(),
+    opportunity.bookmakerBKey.trim().toLowerCase(),
+  ]..sort((left, right) => left.compareTo(right));
+  return '$normalizedSport|$normalizedMatchup|$kickoffEpochMillis|${normalizedBooks[0]}|${normalizedBooks[1]}';
+}
+
+String _normalizedMatchup(String eventName) {
+  final normalizedEvent = eventName.trim().toLowerCase();
+  final participants = normalizedEvent
+      .split(' vs ')
+      .map((participant) => participant.trim())
+      .where((participant) => participant.isNotEmpty)
+      .toList(growable: false);
+  if (participants.length != 2) {
+    return normalizedEvent;
+  }
+  final orderedParticipants = participants.toList(growable: false)
+    ..sort((left, right) => left.compareTo(right));
+  return '${orderedParticipants[0]} vs ${orderedParticipants[1]}';
+}
+
+bool _isPreferredOpportunityCandidate(
+  ArbOpportunity candidate,
+  ArbOpportunity current,
+) {
+  final profitComparison = candidate.profitMarginPercent.compareTo(
+    current.profitMarginPercent,
+  );
+  if (profitComparison != 0) {
+    return profitComparison > 0;
+  }
+  if (candidate.lastUpdatedAt.isAfter(current.lastUpdatedAt)) {
+    return true;
+  }
+  if (candidate.lastUpdatedAt.isBefore(current.lastUpdatedAt)) {
+    return false;
+  }
+  final candidateTieBreak =
+      '${candidate.eventId}|${candidate.bookmakerAKey}|${candidate.bookmakerBKey}|${candidate.decimalOddsA}|${candidate.decimalOddsB}';
+  final currentTieBreak =
+      '${current.eventId}|${current.bookmakerAKey}|${current.bookmakerBKey}|${current.decimalOddsA}|${current.decimalOddsB}';
+  return candidateTieBreak.compareTo(currentTieBreak) < 0;
 }
 
 SportsEventDetail _toSportsEventDetail(Map<String, dynamic> event) {

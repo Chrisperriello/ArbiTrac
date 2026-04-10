@@ -76,6 +76,19 @@ ArbiTrac doesn't just "guess." It uses a rigorous mathematical approach:
 3.  Configure Firebase using `flutterfire configure`.
 4.  Execute `flutter run`.
 
+### Local API Key Sync Utility (Dev Only)
+When updating your OddsAPI key in local development, you can sync it into `.env` for consistent local testing:
+
+```bash
+dart run tool/sync_odds_api_key.dart --key=YOUR_ODDS_API_KEY
+```
+
+You can also omit `--key` and provide it via shell env:
+
+```bash
+ODDS_API_KEY=YOUR_ODDS_API_KEY dart run tool/sync_odds_api_key.dart
+```
+
 ---
 
 ## ⚖️ Legal & Risk

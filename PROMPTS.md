@@ -515,3 +515,13 @@ Height Range: [SingleCardHeight, FullListHeight].
   - Now for the settings can we give a little bit more space on the top row of the
 settigns like expand the space and size of the "Settings" to pushg the tabs
 down a little and not overlap 
+
+-  Read 5.4 and start with 5.4.1 \
+
+-  continue to 5.4.2
+-  Now do 5.4.3
+-  Now read 5.5 and start 5.5.1 
+- now do 5.5.2 and all sub tasks
+
+-  Now do 5.5.3 and all sub tasks 
+- now do 5.5.4 

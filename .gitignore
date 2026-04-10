@@ -62,3 +62,4 @@ lib/firebase_options.dart
 **/google-services.json
 **/GoogleService-Info.plist
 **/firebase_app_id_file.json
+firepit-log.txt
