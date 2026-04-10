@@ -24,7 +24,9 @@ class AuthService {
 
   Future<void> signOut() async {
     try {
-      await _googleSignIn.signOut();
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
       await _auth.signOut();
     } on FirebaseAuthException catch (error) {
       throw AuthServiceException(_mapSignOutError(error.code));

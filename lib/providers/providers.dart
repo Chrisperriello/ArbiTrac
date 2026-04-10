@@ -691,7 +691,73 @@ List<ArbOpportunity> _extractArbOpportunities(
     }
   }
 
-  return opportunities;
+  return _deduplicateArbOpportunities(opportunities);
+}
+
+List<ArbOpportunity> _deduplicateArbOpportunities(
+  List<ArbOpportunity> opportunities,
+) {
+  final byIdentity = <String, ArbOpportunity>{};
+  for (final opportunity in opportunities) {
+    final identityKey = _arbOpportunityIdentityKey(opportunity);
+    final existing = byIdentity[identityKey];
+    if (existing == null ||
+        _isPreferredOpportunityCandidate(opportunity, existing)) {
+      byIdentity[identityKey] = opportunity;
+    }
+  }
+  return byIdentity.values.toList(growable: false);
+}
+
+String _arbOpportunityIdentityKey(ArbOpportunity opportunity) {
+  final normalizedSport = opportunity.sportKey.trim().toLowerCase();
+  final normalizedMatchup = _normalizedMatchup(opportunity.eventName);
+  final kickoffEpochMillis = opportunity.commenceTime
+      .toUtc()
+      .millisecondsSinceEpoch;
+  final normalizedBooks = [
+    opportunity.bookmakerAKey.trim().toLowerCase(),
+    opportunity.bookmakerBKey.trim().toLowerCase(),
+  ]..sort((left, right) => left.compareTo(right));
+  return '$normalizedSport|$normalizedMatchup|$kickoffEpochMillis|${normalizedBooks[0]}|${normalizedBooks[1]}';
+}
+
+String _normalizedMatchup(String eventName) {
+  final normalizedEvent = eventName.trim().toLowerCase();
+  final participants = normalizedEvent
+      .split(' vs ')
+      .map((participant) => participant.trim())
+      .where((participant) => participant.isNotEmpty)
+      .toList(growable: false);
+  if (participants.length != 2) {
+    return normalizedEvent;
+  }
+  final orderedParticipants = participants.toList(growable: false)
+    ..sort((left, right) => left.compareTo(right));
+  return '${orderedParticipants[0]} vs ${orderedParticipants[1]}';
+}
+
+bool _isPreferredOpportunityCandidate(
+  ArbOpportunity candidate,
+  ArbOpportunity current,
+) {
+  final profitComparison = candidate.profitMarginPercent.compareTo(
+    current.profitMarginPercent,
+  );
+  if (profitComparison != 0) {
+    return profitComparison > 0;
+  }
+  if (candidate.lastUpdatedAt.isAfter(current.lastUpdatedAt)) {
+    return true;
+  }
+  if (candidate.lastUpdatedAt.isBefore(current.lastUpdatedAt)) {
+    return false;
+  }
+  final candidateTieBreak =
+      '${candidate.eventId}|${candidate.bookmakerAKey}|${candidate.bookmakerBKey}|${candidate.decimalOddsA}|${candidate.decimalOddsB}';
+  final currentTieBreak =
+      '${current.eventId}|${current.bookmakerAKey}|${current.bookmakerBKey}|${current.decimalOddsA}|${current.decimalOddsB}';
+  return candidateTieBreak.compareTo(currentTieBreak) < 0;
 }
 
 SportsEventDetail _toSportsEventDetail(Map<String, dynamic> event) {
