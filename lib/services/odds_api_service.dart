@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:decimal/decimal.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,8 +19,7 @@ class OddsApiService {
   static const String _oddsCacheKey = 'odds_api_cache_odds';
   static const String _coreMarkets = 'h2h,spreads,totals';
   static const String _outrightsMarket = 'outrights';
-  // TODO(debug-only): Remove mock fallback before production launch.
-  static const bool _enableDebugMockFallback = true;
+  static const bool _enableDebugMockFallback = kDebugMode;
 
   OddsApiService({
     SharedPreferences? preferences,
