@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme/quant_theme.dart';
-import '../providers/providers.dart';
 import '../widgets/cyber_borders.dart';
 import '../widgets/manual_arb_calculator_card.dart';
 
@@ -15,9 +14,6 @@ class CalculatorScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final calculatorState = ref.watch(manualArbCalculatorProvider);
-    final result = calculatorState.result;
-
     return Scaffold(
       appBar: AppBar(title: const Text('Smart Stake Allocation')),
       backgroundColor: QuantTheme.background,
@@ -292,20 +288,4 @@ class _ProTipBox extends StatelessWidget {
       ),
     );
   }
-}
-
-String _fixed(Object value) {
-  final stringValue = value.toString();
-  final dotIndex = stringValue.indexOf('.');
-  if (dotIndex == -1) {
-    return '$stringValue.00';
-  }
-  final decimals = stringValue.length - dotIndex - 1;
-  if (decimals == 2 || decimals == 3) {
-    return stringValue;
-  }
-  if (decimals < 2) {
-    return '$stringValue${'0' * (2 - decimals)}';
-  }
-  return stringValue.substring(0, dotIndex + 4);
 }
