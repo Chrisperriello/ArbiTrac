@@ -18,6 +18,7 @@ class AuthService {
 
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
+  static const Duration _googleSignInTimeout = Duration(seconds: 20);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -42,16 +43,38 @@ class AuthService {
 
       // Mobile / Desktop flow using google_sign_in package
       // 1. Authenticate (Identity) - returns GoogleSignInAccount or throws
-      final googleUser = await _googleSignIn.authenticate();
-      
+      final googleUser = await _googleSignIn.authenticate().timeout(
+        _googleSignInTimeout,
+        onTimeout: () => throw const AuthServiceException(
+          'Google Sign-in timed out. '
+          'If this keeps happening on macOS, verify Xcode signing (Team) and keychain access.',
+        ),
+      );
+
       // 2. Get Authentication details (for idToken)
       // In version 7.x, this is a synchronous property
       final googleAuth = googleUser.authentication;
 
       // 3. Get Authorization (for accessToken)
-      // In version 7.x, accessToken must be obtained via authorizationClient
-      final authorizedUser = await googleUser.authorizationClient.authorizeScopes(['email', 'openid']);
-      final String accessToken = authorizedUser.accessToken;
+      // Reuse an existing scope grant if available to avoid a second consent prompt.
+      final existingAuthorization = await googleUser.authorizationClient
+          .authorizationForScopes(['email', 'openid'])
+          .timeout(
+            _googleSignInTimeout,
+            onTimeout: () => throw const AuthServiceException(
+              'Google authorization timed out. Please try again.',
+            ),
+          );
+      final accessToken = (existingAuthorization ??
+              await googleUser.authorizationClient
+                  .authorizeScopes(['email', 'openid'])
+                  .timeout(
+                    _googleSignInTimeout,
+                    onTimeout: () => throw const AuthServiceException(
+                      'Google authorization timed out. Please try again.',
+                    ),
+                  ))
+          .accessToken;
 
       // 4. Create Firebase Credential
       final credential = GoogleAuthProvider.credential(
@@ -59,7 +82,14 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      final userCredential = await _auth.signInWithCredential(credential);
+      final userCredential = await _auth
+          .signInWithCredential(credential)
+          .timeout(
+            _googleSignInTimeout,
+            onTimeout: () => throw const AuthServiceException(
+              'Firebase sign-in timed out after Google authentication.',
+            ),
+          );
       if (userCredential.user == null) {
         throw const AuthServiceException(
           'Google Sign-in failed. Please try again.',
@@ -67,13 +97,12 @@ class AuthService {
       }
       return userCredential;
     } on FirebaseAuthException catch (error) {
-      throw AuthServiceException(_mapSignInError(error.code));
+      throw AuthServiceException(
+        'FirebaseAuthException(code: ${error.code}, message: ${error.message ?? ''})',
+      );
     } catch (error) {
       if (error is AuthServiceException) rethrow;
-      // Provide more context for the "unexpected" error to help debugging
-      throw AuthServiceException(
-        'An unexpected error occurred during Google Sign-in: ${error.toString()}',
-      );
+      throw AuthServiceException(error.toString());
     }
   }
 

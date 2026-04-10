@@ -1,6 +1,6 @@
 name: arbitrac
 description: "Arbitrage Betting Software"
-publish_to: 'bijecbet.app'
+publish_to: 'none'
 version: 0.5.0
 
 environment:

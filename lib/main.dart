@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'core/config/app_config.dart';
 import 'firebase_options.dart';
@@ -17,11 +18,11 @@ Future<void> main() async {
   await AppConfig.load(secureStorageOddsApiKey: storedOddsApiKey);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize Google Sign In for version 7.x
-  await GoogleSignIn.instance.initialize(
-    clientId:
-        '188999838435-u1dk63enaul40ip75h1cgv6dae3rdcim.apps.googleusercontent.com',
-  );
+  // Initialize Google Sign In for native platforms using google_sign_in package flow.
+  if (!kIsWeb) {
+    final googleClientId = DefaultFirebaseOptions.currentPlatform.iosClientId;
+    await GoogleSignIn.instance.initialize(clientId: googleClientId);
+  }
 
   runApp(const ProviderScope(child: MainApp()));
 }
