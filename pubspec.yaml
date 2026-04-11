@@ -62,7 +62,7 @@ flutter_native_splash:
 msix_config:
   display_name: BijecBet
   publisher_display_name: Bijec
-  identity_name: com.bijec.arbitrac # Changed from example for uniqueness
+  identity_name: com.bijec.bijecbet # Changed from example for uniqueness
   msix_version: 0.5.0.0
   logo_path: assets/icon.png
   capabilities: internetClient # Removed 'runFullTrust' to avoid duplication
