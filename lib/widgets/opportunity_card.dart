@@ -28,7 +28,8 @@ class CyberOpportunityCard extends ConsumerWidget {
       alpha: 0.8,
     );
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
-    final sameEventOpportunities = opportunitiesAsync.asData?.value
+    final sameEventOpportunities =
+        opportunitiesAsync.asData?.value
             .where((item) => item.eventId == opportunity.eventId)
             .toList(growable: false) ??
         const <ArbOpportunity>[];
@@ -38,8 +39,8 @@ class CyberOpportunityCard extends ConsumerWidget {
     final topMarket = positiveMarketsByBestProfit.isEmpty
         ? null
         : positiveMarketsByBestProfit.first;
-    final displayPercent = topMarket?.$2 ?? opportunity.profitMarginPercent;
-    final displayMarketLabel = topMarket?.$1 ?? opportunity.marketLabel;
+    final displayPercent = opportunity.profitMarginPercent;
+    final displayMarketLabel = opportunity.marketLabel;
 
     final profitPercent = double.tryParse(displayPercent.toString()) ?? 0;
     final stalenessSeconds = DateTime.now()
@@ -110,7 +111,9 @@ class CyberOpportunityCard extends ConsumerWidget {
             children: [
               Text(
                 '${_formatPercent(displayPercent)}%',
-                style: theme.textTheme.titleMedium?.copyWith(color: borderColor),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: borderColor,
+                ),
               ),
               const SizedBox(width: 10),
               Text(
@@ -131,10 +134,7 @@ class CyberOpportunityCard extends ConsumerWidget {
       ),
     );
 
-    return InkWell(
-      onTap: onOpenDetails,
-      child: card,
-    );
+    return InkWell(onTap: onOpenDetails, child: card);
   }
 }
 

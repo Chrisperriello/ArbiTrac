@@ -522,3 +522,13 @@ down a little and not overlap
   much to spend where and then will be sent to the rust backend with all other    
   needed paramters and will return the the global number that the UI will map to  
   the bars if that makes sense  
+
+-  Read 5.4 and start with 5.4.1 \
+
+-  continue to 5.4.2
+-  Now do 5.4.3
+-  Now read 5.5 and start 5.5.1 
+- now do 5.5.2 and all sub tasks
+
+-  Now do 5.5.3 and all sub tasks 
+- now do 5.5.4 

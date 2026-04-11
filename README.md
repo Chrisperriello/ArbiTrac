@@ -1,6 +1,16 @@
-# 🎯 ArbiTrac: Professional Arbitrage Betting Automation
+# 🎯 BijecBet | Real-Time Arbitrage Intelligence
 
-**ArbiTrac** is a high-precision, real-time analytics engine designed for professional bettors to identify, calculate, and execute arbitrage opportunities across global sportsbooks. Built with Flutter and powered by a custom mathematical engine, ArbiTrac eliminates the guesswork from "sure-bet" strategies.
+<p align="center">
+  <img src="assets/icon.png" alt="BijecBet logo" width="120" />
+</p>
+
+<p align="center">
+  <img src="https://bijecbet.app/brand/banner.webp" alt="BijecBet banner" width="100%" />
+</p>
+
+**BijecBet** is a high-precision, real-time analytics engine built to surface data-driven arbitrage opportunities across sportsbooks and exchanges.
+
+> **Stop betting. Start arbitraging.**
 
 ---
 
@@ -25,7 +35,7 @@
 
 ## 🧠 The "Math Behind the Magic"
 
-ArbiTrac doesn't just "guess." It uses a rigorous mathematical approach:
+BijecBet doesn't just "guess." It uses a rigorous mathematical approach:
 
 1.  **Implied Probability Check:** For any set of outcomes, the system calculates $P = \sum \frac{1}{Decimal Odds_i}$.
 2.  **Detection:** If $P < 1$, an arbitrage opportunity exists.
@@ -81,11 +91,23 @@ ArbiTrac doesn't just "guess." It uses a rigorous mathematical approach:
 2. Install the FRB generator CLI once: `cargo install flutter_rust_bridge_codegen`.
 3. Regenerate Flutter Rust Bridge bindings whenever Rust risk API signatures change:
    `flutter_rust_bridge_codegen generate --rust-root rust --rust-input crate::api --dart-output lib/src/rust --c-output rust/frb_generated.h`
+### Local API Key Sync Utility (Dev Only)
+When updating your OddsAPI key in local development, you can sync it into `.env` for consistent local testing:
+
+```bash
+dart run tool/sync_odds_api_key.dart --key=YOUR_ODDS_API_KEY
+```
+
+You can also omit `--key` and provide it via shell env:
+
+```bash
+ODDS_API_KEY=YOUR_ODDS_API_KEY dart run tool/sync_odds_api_key.dart
+```
 
 ---
 
 ## ⚖️ Legal & Risk
-ArbiTrac is an analytics and tracking tool. Users are responsible for ensuring compliance with local gambling laws and sportsbook Terms of Service. Arbitrage betting involves execution risk (lines moving before both bets are placed); ArbiTrac provides the data, but the user manages the execution.
+BijecBet is an analytics and tracking tool. Users are responsible for ensuring compliance with local gambling laws and sportsbook Terms of Service. Arbitrage betting involves execution risk (lines moving before both bets are placed); BijecBet provides the data, but the user manages the execution.
 
 ---
 *Developed by CJ Perriello*

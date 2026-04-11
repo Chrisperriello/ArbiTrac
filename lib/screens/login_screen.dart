@@ -57,10 +57,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (!hasUsername) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          UsernameScreen.routeName,
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil(UsernameScreen.routeName, (route) => false);
         return;
       }
 
@@ -84,10 +83,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) {
         return;
       }
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        MainLayoutShell.routeName,
-        (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(MainLayoutShell.routeName, (route) => false);
     } on AuthServiceException catch (error) {
       if (!mounted) {
         return;
@@ -119,10 +117,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) return;
 
       if (!hasUsername) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          UsernameScreen.routeName,
-          (route) => false,
-        );
+        Navigator.of(
+          context,
+        ).pushNamedAndRemoveUntil(UsernameScreen.routeName, (route) => false);
         return;
       }
 
@@ -143,10 +140,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
 
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        MainLayoutShell.routeName,
-        (route) => false,
-      );
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(MainLayoutShell.routeName, (route) => false);
     } on AuthServiceException catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(

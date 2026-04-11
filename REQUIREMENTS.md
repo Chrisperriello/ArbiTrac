@@ -282,6 +282,12 @@ This section should be dated and also numbered for prioty (number removed once c
         
            
 
+
+
+
+
+  
+
 - [ ] __5.3: Anti-Limitation Caught System__
     **Goal**: Implement "Stealth Mode" rails to guide users in avoiding detection by sportsbook algorithms, effectively mimicking recreational betting behavior to prevent account limiting. Risk scoring is handled by a Rust native library (`arb_stealth_engine`) exposed to Flutter via `flutter_rust_bridge`. Flutter owns stake calculation and UI rendering; Rust returns risk outputs only.
 
@@ -394,7 +400,88 @@ This section should be dated and also numbered for prioty (number removed once c
             - Use a `ColorTween` between the bar's assigned color and its 30%-lightened variant for the glow effect.
 
 
-- [ ] __5.4: API limitation calling__
+
+
+- [ ] __5.4: API Key Management & Integration__
+    **Goal**: Provide a secure, user-facing interface to manage external API credentials, allowing for dynamic key updates without requiring a full app rebuild.
+
+    - [x] __5.4.1: Settings - API Keys Tab__
+        - Add a third tab to the `DefaultTabController` in the Settings screen titled **API Keys** using the `Icons.vpn_key` icon.
+        - Implement a specialized **OddsAPI** configuration section.
+        - [x] __5.4.1.1: Secure Input Field__
+            - Create a `TextField` for the OddsAPI key with a "Privacy Toggle."
+            - **Functionality**: Use `obscureText: true` by default. Add a `suffixIcon` with an "eye" (IconButton) that toggles the visibility of the key.
+            - **Validation**: Implement a basic check to ensure the key string is not empty and matches the expected length/format of an OddsAPI key before allowing a save.
+        - [x] __5.4.1.2: Save & Sync Action__
+            - Add an "Update Key" button that triggers the following logic:
+                - **Primary Storage**: Save the key to `flutter_secure_storage` (per Requirement 1.3) to ensure sensitive credentials are encrypted on the device hardware.
+                - **Dynamic Environment Update**: Update the in-memory `Config` class so that the `OddsApiService` immediately begins using the new key without requiring a restart.
+                - **Feedback**: Show a "Success" `SnackBar` once the key is successfully verified and stored.
+        - Added a third Settings tab (`API Keys`, `Icons.vpn_key`) with an OddsAPI section, obscured key input + eye toggle, 32-character format validation, secure-device persistence via `flutter_secure_storage`, runtime `AppConfig` key override for immediate OddsApiService usage, and success/error `SnackBar` feedback.
+
+    - [x] __5.4.2: Infrastructure Integration__
+        - **Refactor Config Service**: Modify the current configuration logic to prioritize the user-entered key from secure storage.
+        - **Hierarchy of Credentials**:
+            1. Check `flutter_secure_storage` for a user-provided key.
+            2. If empty, fallback to the hardcoded key in `./assets/.env`.
+        - **File Management (Dev Only)**: While assets are read-only in production, ensure the local development environment includes a script or utility to sync these values to the `.env` file for local testing consistency.
+        - `AppConfig.load(...)` now accepts a secure-storage key and prioritizes it over `.env` with strict format validation; `main.dart` initializes config using secure-storage first; and a dev utility (`tool/sync_odds_api_key.dart`) plus README commands now support syncing local OddsAPI keys into `.env`.
+
+    - [x] __5.4.3: API Health & Quota Monitor (Expanded)__
+        - **Key Validation**: Upon saving, perform a "handshake" call to the OddsAPI (e.g., a simple `/sports` request). If the API returns a `401 Unauthorized`, notify the user immediately and do not save the key.
+        - **Quota Display**: Beneath the text field, add a small text indicator showing the "Remaining Requests" returned by the API's header (e.g., `x-requests-remaining`).
+        - **Service Injection**: Update the `oddsApiServiceProvider` (Riverpod) to listen to the secure storage provider, ensuring the service is always "watching" for key changes.
+        - Added save-time OddsAPI handshake validation with explicit 401 rejection, displayed `Remaining Requests` from response headers in the API key settings card, and introduced `oddsApiKeyProvider` so `oddsApiServiceProvider` reactively rebuilds from secure-storage-backed key changes.
+
+
+
+- [ ] __5.5: Manual Arb Calc Explainer__
+    **Goal**: Add an educational instructional section directly beneath the Manual Arb Calculator to guide users through the process of manual entry and opportunity identification.
+
+    - [x] __5.5.1: "How to Use This" Section__
+        - **Placement**: Positioned immediately below the `ManualArbCalculatorCard` on the Calculator screen.
+        - **Toggle Interaction**: Feature a small, floating card or `SegmentedButton` in the top-right of this section that allows users to switch between **American** and **Decimal** explanation modes.
+        - **Format**: Use a `TabBarView` or conditional rendering to switch the text/examples based on the selected format.
+        - Added a new instructional section directly beneath the calculator card with a top-right `SegmentedButton` (American/Decimal) and conditional, mode-specific step guidance.
+
+    - [x] __5.5.2: 2-Way Market Example (H2H/Moneyline)__
+        - **Scenario**: NFL - Kansas City Chiefs vs. Buffalo Bills.
+        - [x] __American Explanation__:
+            - **Setup**: Bookie A has Chiefs at `+110`. Bookie B has Bills at `+105`.
+            - **Step-by-Step**:
+                1. Set Bookie A sign to `+` and enter `110`.
+                2. Set Bookie B sign to `+` and enter `105`.
+                3. Enter `$100` in Total Investment.
+            - **The Result**: App shows an Arb % of ~97.5% (Profitable). It instructs you to bet ~$48.78 on Chiefs and ~$51.22 on Bills for a guaranteed profit regardless of who wins.
+        - [x] __Decimal Explanation__:
+            - **Setup**: Bookie A has Chiefs at `2.10`. Bookie B has Bills at `2.05`.
+            - **Step-by-Step**: Follow the same input steps using the decimal fields to achieve a sub-100% total implied probability.
+        - Added mode-specific 2-way NFL examples in the Calculator explainer section with the exact American and Decimal setups, step-by-step inputs, and expected profitable outcome messaging.
+
+    - [x] __5.5.3: 3-Way Market Example (1X2/Soccer)__
+        - **Scenario**: Premier League - Liverpool vs. Arsenal (including Draw).
+        - [x] __American Explanation__:
+            - **Setup**: Bookie A (Liverpool) at `+150`. Bookie B (Draw) at `+250`. Bookie C (Arsenal) at `+280`.
+            - **Step-by-Step**:
+                1. Enter Bookie A: `+150`.
+                2. Enter Bookie B: `+250`.
+                3. Enter Bookie C: `+280`.
+            - **The Result**: Logic calculates the sum of reciprocal odds. If the sum is < 1.0, the app highlights "Profitable Opportunity" and provides the 3-way stake breakdown to cover all three outcomes.
+        - [x] __Decimal Explanation__:
+            - **Setup**: Bookie A: `2.50`. Bookie B: `3.50`. Bookie C: `3.80`.
+            - **Calculation**: $1/2.5 + 1/3.5 + 1/3.8 = 0.40 + 0.28 + 0.26 = 0.94$ (6% Profit Margin).
+        - Added full 3-way soccer examples in both American and Decimal explainer modes, including setup values, ordered steps, and outcome/calculation guidance.
+
+    - [x] __5.5.4: UI Components & Styling__
+        - **Visual Hierarchy**: Use how we use themes before for the background and `*.action` for step headers (1, 2, 3).
+        - **Step Cards**: Use a `Stepper` widget or a vertical list of custom cards to make the "Step-by-Step" instructions scannable.
+        - **Mathematical Callouts**: Include a "Pro Tip" box explaining the core logic: *“If the total implied probability is less than 100%, you have found an arbitrage.”*
+        - Refactored the Calculator explainer into themed custom step cards with `QuantTheme.action` step-number headers, preserved themed panel hierarchy, and added a dedicated Pro Tip callout box with the implied-probability rule.
+
+
+
+
+- [ ] __5.6: API limitation calling__
     Purpose: If we are filtering based on sports books and classes
     - We want api calls to only call sports that are saved as favorites, so only lines for NBA if that is the only favorite
     - WE want api call to only call for the books that the filter has as filtered books

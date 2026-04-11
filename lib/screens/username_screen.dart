@@ -104,7 +104,7 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please choose a username to represent you in ArbiTrac.',
+                      'Please choose a username to represent you in BijecBet.',
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),

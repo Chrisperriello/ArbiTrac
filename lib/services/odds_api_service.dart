@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:decimal/decimal.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:http/http.dart' as http;
 import 'package:rational/rational.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,13 +19,14 @@ class OddsApiService {
   static const String _oddsCacheKey = 'odds_api_cache_odds';
   static const String _coreMarkets = 'h2h,spreads,totals';
   static const String _outrightsMarket = 'outrights';
-  // TODO(debug-only): Remove mock fallback before production launch.
-  static const bool _enableDebugMockFallback = true;
+  static const bool _enableDebugMockFallback = kDebugMode;
 
   OddsApiService({
     SharedPreferences? preferences,
     this.cacheTtl = const Duration(minutes: 5),
     this.refreshInterval = const Duration(minutes: 5),
+    this.apiKeyOverride,
+    this.uid,
     http.Client? client,
   }) : _preferences = preferences,
        _client = client ?? http.Client();
@@ -33,18 +34,25 @@ class OddsApiService {
   final SharedPreferences? _preferences;
   final Duration cacheTtl;
   final Duration refreshInterval;
+  final String? apiKeyOverride;
+  final String? uid;
   final http.Client _client;
 
-  void _log(String message) {
-    debugPrint('[OddsApiService] $message');
+  String _getCacheKey(String baseKey) {
+    if (uid == null) {
+      return baseKey;
+    }
+    return '${baseKey}_$uid';
   }
+
+  void _log(String message) {}
 
   Future<List<Map<String, dynamic>>> fetchSports({
     bool forceRefresh = false,
   }) async {
     _log('fetchSports(forceRefresh: $forceRefresh) start');
     final cached = await _readCache(
-      _sportsCacheKey,
+      _getCacheKey(_sportsCacheKey),
       forceRefresh: forceRefresh,
     );
     if (cached != null) {
@@ -55,7 +63,7 @@ class OddsApiService {
 
     final remote = await _fetchSportsFromOddsApi();
     if (remote != null) {
-      await _writeCache(_sportsCacheKey, remote);
+      await _writeCache(_getCacheKey(_sportsCacheKey), remote);
       _log('fetchSports api success: ${remote.length} records');
       return remote;
     }
@@ -76,7 +84,10 @@ class OddsApiService {
     _log(
       'fetchOdds(sportKey: ${sportKey ?? 'all'}, forceRefresh: $forceRefresh) start',
     );
-    final cached = await _readCache(_oddsCacheKey, forceRefresh: forceRefresh);
+    final cached = await _readCache(
+      _getCacheKey(_oddsCacheKey),
+      forceRefresh: forceRefresh,
+    );
     if (cached != null) {
       final normalizedCached = _normalizeOddsPayload(cached);
       final filtered = _filterOddsBySport(normalizedCached, sportKey);
@@ -87,7 +98,7 @@ class OddsApiService {
 
     final remote = await _fetchOddsFromOddsApi();
     if (remote != null) {
-      await _writeCache(_oddsCacheKey, remote);
+      await _writeCache(_getCacheKey(_oddsCacheKey), remote);
       final normalizedRemote = _normalizeOddsPayload(remote);
       final filtered = _filterOddsBySport(normalizedRemote, sportKey);
       _log('fetchOdds api success: ${filtered.length} events after filtering');
@@ -119,6 +130,25 @@ class OddsApiService {
       final refreshed = await fetchOdds(sportKey: sportKey, forceRefresh: true);
       _log('watchOdds emit cycle #$cycle: ${refreshed.length} events');
       yield refreshed;
+    }
+  }
+
+  Future<OddsApiHandshakeResult> validateApiKey(String apiKey) async {
+    final trimmed = apiKey.trim();
+    final uri = Uri.https('api.the-odds-api.com', '/v4/sports', {
+      'apiKey': trimmed,
+      'all': 'true',
+    });
+    try {
+      final response = await _client.get(uri);
+      return OddsApiHandshakeResult(
+        statusCode: response.statusCode,
+        remainingRequests: response.headers['x-requests-remaining'],
+      );
+    } catch (_) {
+      throw const OddsApiServiceException(
+        'Could not reach OddsAPI. Check your network and try again.',
+      );
     }
   }
 
@@ -244,7 +274,9 @@ class OddsApiService {
     }
   }
 
-  List<Map<String, dynamic>> _mergeEventsById(List<Map<String, dynamic>> events) {
+  List<Map<String, dynamic>> _mergeEventsById(
+    List<Map<String, dynamic>> events,
+  ) {
     final byId = <String, Map<String, dynamic>>{};
     for (final event in events) {
       final eventId = event['id'] as String?;
@@ -257,8 +289,11 @@ class OddsApiService {
   }
 
   String? _readOddsApiKey() {
+    final override = apiKeyOverride?.trim();
+    if (override != null && override.isNotEmpty) {
+      return override;
+    }
     try {
-      _log(AppConfig.oddsApiKey);
       return AppConfig.oddsApiKey;
     } catch (_) {
       return null;
@@ -456,4 +491,18 @@ class OddsApiServiceException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class OddsApiHandshakeResult {
+  const OddsApiHandshakeResult({
+    required this.statusCode,
+    required this.remainingRequests,
+  });
+
+  final int statusCode;
+  final String? remainingRequests;
+
+  bool get isUnauthorized => statusCode == 401;
+
+  bool get isSuccess => statusCode >= 200 && statusCode < 300;
 }
