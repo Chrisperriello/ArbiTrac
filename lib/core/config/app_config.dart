@@ -4,15 +4,8 @@ class AppConfig {
   static final RegExp _oddsApiKeyPattern = RegExp(r'^[A-Za-z0-9]{32}$');
   static String? _userProvidedOddsApiKey;
 
-  static Future<void> load({String? secureStorageOddsApiKey}) async {
+  static Future<void> load() async {
     await dotenv.load(fileName: '.env');
-    if (secureStorageOddsApiKey == null) {
-      return;
-    }
-    final normalized = secureStorageOddsApiKey.trim();
-    if (isValidOddsApiKeyFormat(normalized)) {
-      _userProvidedOddsApiKey = normalized;
-    }
   }
 
   static bool isValidOddsApiKeyFormat(String key) {
@@ -30,6 +23,10 @@ class AppConfig {
       );
     }
     _userProvidedOddsApiKey = normalized;
+  }
+
+  static void clearRuntimeOddsApiKey() {
+    _userProvidedOddsApiKey = null;
   }
 
   //Config for getting the api key

@@ -26,6 +26,7 @@ class OddsApiService {
     this.cacheTtl = const Duration(minutes: 5),
     this.refreshInterval = const Duration(minutes: 5),
     this.apiKeyOverride,
+    this.uid,
     http.Client? client,
   }) : _preferences = preferences,
        _client = client ?? http.Client();
@@ -34,7 +35,15 @@ class OddsApiService {
   final Duration cacheTtl;
   final Duration refreshInterval;
   final String? apiKeyOverride;
+  final String? uid;
   final http.Client _client;
+
+  String _getCacheKey(String baseKey) {
+    if (uid == null) {
+      return baseKey;
+    }
+    return '${baseKey}_$uid';
+  }
 
   void _log(String message) {}
 
@@ -43,7 +52,7 @@ class OddsApiService {
   }) async {
     _log('fetchSports(forceRefresh: $forceRefresh) start');
     final cached = await _readCache(
-      _sportsCacheKey,
+      _getCacheKey(_sportsCacheKey),
       forceRefresh: forceRefresh,
     );
     if (cached != null) {
@@ -54,7 +63,7 @@ class OddsApiService {
 
     final remote = await _fetchSportsFromOddsApi();
     if (remote != null) {
-      await _writeCache(_sportsCacheKey, remote);
+      await _writeCache(_getCacheKey(_sportsCacheKey), remote);
       _log('fetchSports api success: ${remote.length} records');
       return remote;
     }
@@ -75,7 +84,10 @@ class OddsApiService {
     _log(
       'fetchOdds(sportKey: ${sportKey ?? 'all'}, forceRefresh: $forceRefresh) start',
     );
-    final cached = await _readCache(_oddsCacheKey, forceRefresh: forceRefresh);
+    final cached = await _readCache(
+      _getCacheKey(_oddsCacheKey),
+      forceRefresh: forceRefresh,
+    );
     if (cached != null) {
       final normalizedCached = _normalizeOddsPayload(cached);
       final filtered = _filterOddsBySport(normalizedCached, sportKey);
@@ -86,7 +98,7 @@ class OddsApiService {
 
     final remote = await _fetchOddsFromOddsApi();
     if (remote != null) {
-      await _writeCache(_oddsCacheKey, remote);
+      await _writeCache(_getCacheKey(_oddsCacheKey), remote);
       final normalizedRemote = _normalizeOddsPayload(remote);
       final filtered = _filterOddsBySport(normalizedRemote, sportKey);
       _log('fetchOdds api success: ${filtered.length} events after filtering');

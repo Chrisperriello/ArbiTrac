@@ -13,9 +13,7 @@ import 'theme.dart';
 //Async function for updates
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final secureStorage = SecureStorageService();
-  final storedOddsApiKey = await secureStorage.readOddsApiKey();
-  await AppConfig.load(secureStorageOddsApiKey: storedOddsApiKey);
+  await AppConfig.load();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize Google Sign In for native platforms using google_sign_in package flow.

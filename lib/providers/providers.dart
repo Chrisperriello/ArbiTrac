@@ -17,7 +17,8 @@ import '../services/services.dart';
 //gets the oddsApi, it gives the apr is scope
 final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
   final oddsApiKey = ref.watch(oddsApiKeyProvider).asData?.value;
-  return OddsApiService(apiKeyOverride: oddsApiKey);
+  final user = ref.watch(authStateChangesProvider).asData?.value;
+  return OddsApiService(apiKeyOverride: oddsApiKey, uid: user?.uid);
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -43,8 +44,16 @@ final oddsApiKeyProvider = AsyncNotifierProvider<OddsApiKeyNotifier, String?>(
 class OddsApiKeyNotifier extends AsyncNotifier<String?> {
   @override
   Future<String?> build() async {
+    final authState = ref.watch(authStateChangesProvider);
+    final user = authState.asData?.value;
+
+    if (user == null) {
+      AppConfig.clearRuntimeOddsApiKey();
+      return null;
+    }
+
     final secureStorage = ref.watch(secureStorageServiceProvider);
-    final storedKey = await secureStorage.readOddsApiKey();
+    final storedKey = await secureStorage.readOddsApiKey(uid: user.uid);
     if (storedKey == null || !AppConfig.isValidOddsApiKeyFormat(storedKey)) {
       return null;
     }
@@ -62,8 +71,14 @@ class OddsApiKeyNotifier extends AsyncNotifier<String?> {
         'Odds API key must be a 32-character alphanumeric string.',
       );
     }
+
+    final user = ref.read(authStateChangesProvider).asData?.value;
+    if (user == null) {
+      throw StateError('Cannot save API key when not logged in.');
+    }
+
     final secureStorage = ref.read(secureStorageServiceProvider);
-    await secureStorage.saveOddsApiKey(normalized);
+    await secureStorage.saveOddsApiKey(normalized, uid: user.uid);
     AppConfig.setRuntimeOddsApiKey(normalized);
     state = AsyncData(normalized);
   }
