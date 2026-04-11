@@ -52,7 +52,7 @@ class _SportsEventDetailScreenState
     );
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Event details')),
+      appBar: AppBar(title: const Text('Event details'),  centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: detailAsync.when(

@@ -83,6 +83,7 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Username'),
+        centerTitle: true,
         automaticallyImplyLeading: false, // User must set username to proceed
       ),
       body: SafeArea(
