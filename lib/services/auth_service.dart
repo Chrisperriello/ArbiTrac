@@ -1,6 +1,18 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart' as gsi;
+import 'package:google_sign_in_all_platforms/google_sign_in_all_platforms.dart'
+    as gsiap;
+
+import '../core/config/app_config.dart';
+import '../core/platform/platform_detector.dart';
+
+bool get _supportsNativeGoogleSignIn =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS);
 
 class AuthServiceException implements Exception {
   const AuthServiceException(this.message);
@@ -12,20 +24,24 @@ class AuthServiceException implements Exception {
 }
 
 class AuthService {
-  AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
+  AuthService({FirebaseAuth? auth, gsi.GoogleSignIn? googleSignIn})
     : _auth = auth ?? FirebaseAuth.instance,
-      _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
+      _googleSignIn = googleSignIn ?? gsi.GoogleSignIn.instance;
 
   final FirebaseAuth _auth;
-  final GoogleSignIn _googleSignIn;
+  final gsi.GoogleSignIn _googleSignIn;
+  gsiap.GoogleSignIn? _desktopGoogleSignIn;
   static const Duration _googleSignInTimeout = Duration(seconds: 20);
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   Future<void> signOut() async {
     try {
-      if (!kIsWeb) {
+      if (_supportsNativeGoogleSignIn) {
         await _googleSignIn.signOut();
+      }
+      if (isWindowsPlatform && _desktopGoogleSignIn != null) {
+        await _desktopGoogleSignIn!.signOut();
       }
       await _auth.signOut();
     } on FirebaseAuthException catch (error) {
@@ -38,66 +54,17 @@ class AuthService {
   Future<UserCredential> signInWithGoogle() async {
     try {
       if (kIsWeb) {
-        // For web, use Firebase's native popup provider which works better with GIS
-        final googleProvider = GoogleAuthProvider();
-        return await _auth.signInWithPopup(googleProvider);
+        return _signInWithGoogleWeb();
       }
-
-      // Mobile / Desktop flow using google_sign_in package
-      // 1. Authenticate (Identity) - returns GoogleSignInAccount or throws
-      final googleUser = await _googleSignIn.authenticate().timeout(
-        _googleSignInTimeout,
-        onTimeout: () => throw const AuthServiceException(
-          'Google Sign-in timed out. '
-          'If this keeps happening on macOS, verify Xcode signing (Team) and keychain access.',
-        ),
-      );
-
-      // 2. Get Authentication details (for idToken)
-      // In version 7.x, this is a synchronous property
-      final googleAuth = googleUser.authentication;
-
-      // 3. Get Authorization (for accessToken)
-      // Reuse an existing scope grant if available to avoid a second consent prompt.
-      final existingAuthorization = await googleUser.authorizationClient
-          .authorizationForScopes(['email', 'openid'])
-          .timeout(
-            _googleSignInTimeout,
-            onTimeout: () => throw const AuthServiceException(
-              'Google authorization timed out. Please try again.',
-            ),
-          );
-      final accessToken = (existingAuthorization ??
-              await googleUser.authorizationClient
-                  .authorizeScopes(['email', 'openid'])
-                  .timeout(
-                    _googleSignInTimeout,
-                    onTimeout: () => throw const AuthServiceException(
-                      'Google authorization timed out. Please try again.',
-                    ),
-                  ))
-          .accessToken;
-
-      // 4. Create Firebase Credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final userCredential = await _auth
-          .signInWithCredential(credential)
-          .timeout(
-            _googleSignInTimeout,
-            onTimeout: () => throw const AuthServiceException(
-              'Firebase sign-in timed out after Google authentication.',
-            ),
-          );
-      if (userCredential.user == null) {
+      if (isWindowsPlatform) {
+        return _signInWithGoogleWindows();
+      }
+      if (!_supportsNativeGoogleSignIn) {
         throw const AuthServiceException(
-          'Google Sign-in failed. Please try again.',
+          'Google Sign-In is not supported on this platform.',
         );
       }
-      return userCredential;
+      return _signInWithGoogleNative();
     } on FirebaseAuthException catch (error) {
       throw AuthServiceException(
         'FirebaseAuthException(code: ${error.code}, message: ${error.message ?? ''})',
@@ -106,6 +73,109 @@ class AuthService {
       if (error is AuthServiceException) rethrow;
       throw AuthServiceException(error.toString());
     }
+  }
+
+  Future<UserCredential> _signInWithGoogleWeb() async {
+    final googleProvider = GoogleAuthProvider();
+    return _auth.signInWithPopup(googleProvider);
+  }
+
+  Future<UserCredential> _signInWithGoogleWindows() async {
+    final desktopSignIn = _desktopGoogleSignIn ??= gsiap.GoogleSignIn(
+      params: gsiap.GoogleSignInParams(
+        clientId: AppConfig.googleOAuthWebClientId,
+        clientSecret: AppConfig.googleOAuthClientSecret,
+        redirectPort: AppConfig.googleOAuthRedirectPort,
+        scopes: const ['openid', 'email', 'profile'],
+      ),
+    );
+
+    final credentials = await desktopSignIn.signIn().timeout(
+      _googleSignInTimeout,
+      onTimeout: () => throw const AuthServiceException(
+        'Google Sign-in timed out. Please try again.',
+      ),
+    );
+    if (credentials == null) {
+      throw const AuthServiceException('Google Sign-in was canceled.');
+    }
+    final idToken = credentials.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw const AuthServiceException(
+        'Google Sign-In did not return an ID token. Check your Google OAuth Web Client ID/Secret and localhost redirect URI.',
+      );
+    }
+    return _signInToFirebaseWithGoogleTokens(
+      accessToken: credentials.accessToken,
+      idToken: idToken,
+    );
+  }
+
+  Future<UserCredential> _signInWithGoogleNative() async {
+    final googleUser = await _googleSignIn.authenticate().timeout(
+      _googleSignInTimeout,
+      onTimeout: () => throw const AuthServiceException(
+        'Google Sign-in timed out. '
+        'If this keeps happening on macOS, verify Xcode signing (Team) and keychain access.',
+      ),
+    );
+
+    final googleAuth = googleUser.authentication;
+    final existingAuthorization = await googleUser.authorizationClient
+        .authorizationForScopes(['email', 'openid'])
+        .timeout(
+          _googleSignInTimeout,
+          onTimeout: () => throw const AuthServiceException(
+            'Google authorization timed out. Please try again.',
+          ),
+        );
+    final accessToken =
+        (existingAuthorization ??
+                await googleUser.authorizationClient
+                    .authorizeScopes(['email', 'openid'])
+                    .timeout(
+                      _googleSignInTimeout,
+                      onTimeout: () => throw const AuthServiceException(
+                        'Google authorization timed out. Please try again.',
+                      ),
+                    ))
+            .accessToken;
+
+    final idToken = googleAuth.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw const AuthServiceException(
+        'Google Sign-In did not return an ID token. Please try again.',
+      );
+    }
+
+    return _signInToFirebaseWithGoogleTokens(
+      accessToken: accessToken,
+      idToken: idToken,
+    );
+  }
+
+  Future<UserCredential> _signInToFirebaseWithGoogleTokens({
+    required String accessToken,
+    required String idToken,
+  }) async {
+    final credential = GoogleAuthProvider.credential(
+      accessToken: accessToken,
+      idToken: idToken,
+    );
+    final userCredential = await _auth
+        .signInWithCredential(credential)
+        .timeout(
+          _googleSignInTimeout,
+          onTimeout: () => throw const AuthServiceException(
+            'Firebase sign-in timed out after Google authentication.',
+          ),
+        );
+    if (userCredential.user == null) {
+      throw const AuthServiceException(
+        'Google Sign-in failed. Please try again.',
+      );
+    }
+    return userCredential;
   }
 
   Future<UserCredential> signInWithEmail({
