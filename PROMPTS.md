@@ -1,5 +1,9 @@
 REMEMBER BEFORE ANY SESSION YOU SHOULD HAVE READ AND COMPLETED STARTUP.md 
 
+
+CITED: Sports-Arbitrage, https://sports-arbitrage.com/calculators/arbitrage-betting-risk-simulator/, accessed: April 13th, 2026
+
+
 Prompts 
 
 3/4: 
@@ -535,3 +539,26 @@ down a little and not overlap
 
 4/12
 -Lets do 5.3.1 
+4/13
+- When I hit start the app it stops at this function: App app([String? name]) {                                
+     return App.getInstance(                                                                                    
+       name != null                                                                                             
+           ? firebase_interop.getApp(name.toJS)                                                                 
+           : firebase_interop.getApp(), with this exception: Exception has occurred.                            
+   FirebaseError: Firebase: No Firebase App '[DEFAULT]' has been created - call initializeApp() first           
+   (app/no-app).                                                                                                
+   https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js 2270:29                 getApp                     
+   package:firebase_core_web/src/interop/core.dart 60:28                             app$                       
+   package:firebase_core_web/src/firebase_core_web.dart 299:24                       <fn>   
+
+   -    the rounding should only show up dynamically in sport_event_detail_screen so that should change and there should be nothing in the opportunity card that mentions the stakes being added is after you input investment in sport_event_detail_screen and like mentioned before it should dynmically update how much you bet and where update the requirement 5.3.1.1, uncheck it to reflect that its not done and refacotr it to be what it supposed to do but inside sport_event_detail_screen   
+
+   - I undid the requirment.md changes so you will have to do that again but THE RISK AND SHOWING THE RISK IS     
+   STILL ON THE OUTSIDE OF THE CARD. I want to get ride of the stealth stake outside the card and move it       
+   into sport_detail_screen. Also I want the health bars to show up inside sport_detail_screen for each of      
+   the differenet lines, so switching lines will switch what the health bar says, but the opportunity card      
+   just shows the biggest return, Then add all the rounding for the stealth inside the sport_detail_screen      
+   and make sure everything is correct. So all calculations arent rounded for payout just for the what to       
+   stake and the payout reflects betting the rounded number on that like (like 2.10), since we arent            
+   allowing for exacts then there will be times the payouts are different, so display the smaller payout and    
+   the return percentage might be recalulated to reflect the different payout. Does this makes sense  

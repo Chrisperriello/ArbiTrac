@@ -51,6 +51,14 @@ class ArbEngine {
     return arbitragePercentage(decimalOdds) < _one;
   }
 
+  /// Calculates the ROI (Return on Investment) percentage.
+  /// Formula: (1 / ArbitrageSum - 1) * 100
+  static Decimal calculateRoi(Decimal arbitrageSum) {
+    if (arbitrageSum <= _zero) return _zero;
+    final hundred = Decimal.fromInt(100);
+    return _toDecimal((_one / arbitrageSum - _one.toRational()) * hundred.toRational());
+  }
+
 
   //Once you know there is an Arbitrafe Opportunity
   //Then this will tell you how much to put on each of the 

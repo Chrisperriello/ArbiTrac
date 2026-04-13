@@ -658,8 +658,6 @@ List<ArbOpportunity> _extractArbOpportunities(
   List<Map<String, dynamic>> events,
 ) {
   final opportunities = <ArbOpportunity>[];
-  final one = Decimal.fromInt(1);
-  final hundred = Decimal.fromInt(100);
   final supportedMarkets = <String>{'h2h', 'spreads', 'totals', 'outrights'};
 
   //Loop through the events
@@ -743,8 +741,8 @@ List<ArbOpportunity> _extractArbOpportunities(
       if (!ArbEngine.isArbitrageOpportunity(decimalOdds)) {
         continue;
       }
-      //profit margin
-      final profitMarginPercent = (one - arbSum) * hundred;
+      // ROI %
+      final profitMarginPercent = ArbEngine.calculateRoi(arbSum);
       //update time
       final freshestUpdate =
           firstQuote.lastUpdatedAt.isAfter(secondQuote.lastUpdatedAt)

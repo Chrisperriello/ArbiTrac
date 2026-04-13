@@ -201,17 +201,7 @@ class _CyberOpportunityCardState extends ConsumerState<CyberOpportunityCard> {
             ],
           ),
           const SizedBox(height: 6),
-          if (isStealthActive) ...[
-            Text(
-              'Stealth Stakes: \$${finalStakes[0].toStringAsFixed(0)} on ${widget.opportunity.bookmakerA} / '
-              '\$${finalStakes[1].toStringAsFixed(0)} on ${widget.opportunity.bookmakerB}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-          ],
+          
           Text(
             topMarket == null
                 ? 'Highest reward market: none'

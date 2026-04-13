@@ -314,17 +314,14 @@ This section should be dated and also numbered for prioty (number removed once c
         - Include a descriptive subtitle: *"Monitors Account Heat using risk scoring to extend your account longevity."*
         - The config fields in 5.3.1.2 are gated behind this switch and should be disabled when Stealth Mode is off.
 
-        - [x] __5.3.1.1: Opportunities Card Info Edit__
-            - When Stealth Mode is active, stake suggestions remain UI-calculated from total investment + odds using the Dart arb engine.
-            - When Stealth Mode is active, the UI stake calculator must round each suggested stake to the nearest configured increment (5 or 10).
-            - After stake calculation, Dart sends risk inputs (including the computed stake context and other user settings) into `bijecBetBridge.computeRisk(...)`; Rust returns risk output only.
-            - Integrate a **Risk Monitor** widget on the right side of each card. It renders 10 rounded vertical bars whose filled count and color are driven entirely by the `level` integer (1–10) returned from the Rust `compute_risk` call. The widget itself is display-only and performs no math.
-            - Bar color mapping (use constants from `theme.dart`):
-                - **1–2 Bars (Dark Green)**: "Low Risk"
-                - **3–4 Bars (Light Green)**: "Low to Moderate Risk"
-                - **5–6 Bars (Yellow)**: "Moderate Risk"
-                - **7–8 Bars (Orange)**: "Moderate to High Risk"
-                - **9–10 Bars (Red)**: "High Risk"
+        - [x] __5.3.1.1: Stealth Stake & Risk Monitor (Detail Screen)__
+            - When Stealth Mode is active, the `SportsEventDetailScreen` must include a field for "Total Investment".
+            - Upon inputting an investment, the UI must dynamically calculate and display recommended stakes for each outcome using the Dart arb engine.
+            - If Stealth Mode is active, these suggested stakes must be rounded to the nearest configured increment (5 or 10) as defined in Stealth Settings.
+            - **Calculation Note**: Payout and Profit must be recalculated using the *rounded* stakes. The "Guaranteed Payout" displayed should be the minimum of the possible outcomes based on these discrete bets.
+            - After rounding, the UI must send the updated stake context and user settings to the Rust engine (`bijecBetBridge.computeRisk`) to get a real-time risk level.
+            - Integrate the **Risk Monitor** widget (pulsing health bars) into the detail screen. It should update its level and color mapping (1–10) dynamically as the user changes their investment or switches between different market lines.
+            - The `OpportunityCard` on the dashboard should be stripped of stealth stake text and health bars, focusing instead on the top arbitrage return percentage and market metadata.
 
     - [x] __5.3.1.2: Config__
         - Create the following input fields, enabled only when Stealth Mode is on:

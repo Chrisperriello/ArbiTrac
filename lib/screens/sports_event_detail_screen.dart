@@ -1,13 +1,18 @@
 
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:rational/rational.dart';
 
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../src/rust/api.dart';
+import '../src/rust/risk.dart';
+import '../widgets/risk_monitor.dart';
 
 class SportsEventDetailScreen extends ConsumerStatefulWidget {
   const SportsEventDetailScreen({super.key, required this.opportunity});
@@ -39,6 +44,37 @@ class _SportsEventDetailScreenState
     super.dispose();
   }
 
+  MarketType _mapMarketType(String label) {
+    final lower = label.toLowerCase();
+    if (lower.contains('moneyline') || lower.contains('h2h')) {
+      return MarketType.moneyline;
+    }
+    if (lower.contains('spread') ||
+        lower.contains('handicap') ||
+        lower.contains('total')) {
+      return MarketType.mainTotalHandicapSpread;
+    }
+    return MarketType.smallMarketTotalHandicap;
+  }
+
+  Decimal _roundStake(Decimal stake, int increment) {
+    if (increment <= 0) return stake;
+    final value = stake.toDouble();
+    final rounded = (value / increment).round() * increment;
+    return Decimal.parse(rounded.toString());
+  }
+
+  void _reportRiskScore(double score) {
+    final viewedIds = ref.read(sessionViewedOpportunityIdsProvider);
+    if (!viewedIds.contains(widget.opportunity.favoriteId)) {
+      ref.read(sessionViewedOpportunityIdsProvider.notifier).update((state) => {
+        ...state,
+        widget.opportunity.favoriteId,
+      });
+      ref.read(sessionRiskScoresProvider.notifier).addScore(score);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(
@@ -50,9 +86,12 @@ class _SportsEventDetailScreenState
     final investmentInput = ref.watch(
       opportunityInvestmentInputProvider(widget.opportunity.favoriteId),
     );
+    final stealthAsync = ref.watch(stealthSettingsProvider);
+    final stealthSettings = stealthAsync.asData?.value ?? const StealthSettings();
+    final isStealthActive = stealthSettings.stealthModeEnabled;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Event details'),  centerTitle: true),
+      appBar: AppBar(title: const Text('Event details'), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: detailAsync.when(
@@ -77,17 +116,57 @@ class _SportsEventDetailScreenState
             );
             final marketReturns = _summarizePositiveMarketReturns(detail.markets);
             final topMarket = marketReturns.isEmpty ? null : marketReturns.first;
+
+            // --- Stealth/Stake Calculations ---
             final stakeGuidance = _calculateMarketStakeGuidance(
               selectedMarket: selectedMarket,
               totalInvestmentInput: investmentInput,
+              stealthSettings: stealthSettings,
+              roundStakeFn: _roundStake,
             );
+
+            // Calculate Risk Level from Rust if we have valid stakes
+            RiskOutput? riskOutput;
+            if (isStealthActive && stakeGuidance.result != null) {
+              final result = stakeGuidance.result!;
+              riskOutput = calculateRisk(
+                input: RiskInput(
+                  arbPercent: double.tryParse(stakeGuidance.profitPercent?.toString() ?? '0') ?? 0.0,
+                  totalInvestment: double.tryParse(investmentInput) ?? 0.0,
+                  stakeDistribution: Float64List.fromList([
+                    result.stakeA.toDouble(),
+                    result.stakeB.toDouble(),
+                  ]),
+                  betsPerDay: stealthSettings.betsPerDay,
+                  booksCount: stealthSettings.booksCount,
+                  sportsCount: stealthSettings.sportsCount,
+                  marketTypes: [_mapMarketType(selectedMarket.marketLabel)],
+                ),
+              );
+
+              // Side effect: Add score to session tracking
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  _reportRiskScore(riskOutput!.globalScore);
+                }
+              });
+            }
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  detail.eventName,
-                  style: Theme.of(context).textTheme.titleLarge,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        detail.eventName,
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    if (isStealthActive && riskOutput != null)
+                      RiskMonitor(level: riskOutput.level),
+                  ],
                 ),
                 const SizedBox(height: 6),
                 Text(
@@ -165,11 +244,14 @@ class _SportsEventDetailScreenState
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                  const Divider(),
                   Text(
                     'Guaranteed payout: \$${_formatDecimal(stakeGuidance.result!.guaranteedPayout)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(
-                    'Net profit: \$${_formatDecimal(stakeGuidance.result!.netProfit)}',
+                    'Net profit: \$${_formatDecimal(stakeGuidance.result!.netProfit)} '
+                    '(${_formatDecimal(stakeGuidance.profitPercent ?? Decimal.zero)}%)',
                   ),
                 ],
                 const SizedBox(height: 12),
@@ -285,12 +367,19 @@ String _formatRelativeAge(DateTime lastUpdatedAt) {
   return '$days day${days == 1 ? '' : 's'}';
 }
 
+Decimal _toDecimal(Rational value) {
+  return value.toDecimal(scaleOnInfinitePrecision: 12);
+}
+
 _OpportunityStakeGuidance _calculateMarketStakeGuidance({
   required SportsEventMarketDetail selectedMarket,
   required String totalInvestmentInput,
+  required StealthSettings stealthSettings,
+  required Decimal Function(Decimal, int) roundStakeFn,
 }) {
   final parsedInvestment = Decimal.tryParse(totalInvestmentInput.trim());
   final zero = Decimal.fromInt(0);
+  final hundred = Decimal.fromInt(100);
   if (totalInvestmentInput.trim().isEmpty) {
     return const _OpportunityStakeGuidance();
   }
@@ -328,43 +417,56 @@ _OpportunityStakeGuidance _calculateMarketStakeGuidance({
     );
   }
 
-  final stakes = ArbEngine.individualStakes(
+  var stakes = ArbEngine.individualStakes(
     decimalOdds: [bestQuotes[0].odds, bestQuotes[1].odds],
     totalInvestment: parsedInvestment,
   );
+
+  if (stealthSettings.stealthModeEnabled) {
+    stakes = stakes.map((s) => roundStakeFn(s, stealthSettings.roundingIncrement)).toList();
+  }
+
   final payoutA = stakes[0] * bestQuotes[0].odds;
   final payoutB = stakes[1] * bestQuotes[1].odds;
   final guaranteedPayout = payoutA < payoutB ? payoutA : payoutB;
+  final actualInvestment = stakes[0] + stakes[1];
+  final netProfit = guaranteedPayout - actualInvestment;
+  final profitPercent = actualInvestment > zero
+      ? _toDecimal(netProfit / actualInvestment) * hundred
+      : zero;
+
   return _OpportunityStakeGuidance(
-      result: _OpportunityStakeResult(
-        stakeA: stakes[0],
-        stakeB: stakes[1],
-        betDescriptorA: _formatBetDescriptor(
-          marketKey: selectedMarket.marketKey,
-          quote: bestQuotes[0],
-        ),
-        betDescriptorB: _formatBetDescriptor(
-          marketKey: selectedMarket.marketKey,
-          quote: bestQuotes[1],
-        ),
-        bookmakerA: bestQuotes[0].bookmakerTitle,
-        bookmakerB: bestQuotes[1].bookmakerTitle,
-        lineMismatchNote: _lineMismatchNote(
-          marketKey: selectedMarket.marketKey,
-          quoteA: bestQuotes[0],
-          quoteB: bestQuotes[1],
-        ),
-        guaranteedPayout: guaranteedPayout,
-        netProfit: guaranteedPayout - parsedInvestment,
+    profitPercent: profitPercent,
+    result: _OpportunityStakeResult(
+      stakeA: stakes[0],
+      stakeB: stakes[1],
+      betDescriptorA: _formatBetDescriptor(
+        marketKey: selectedMarket.marketKey,
+        quote: bestQuotes[0],
       ),
+      betDescriptorB: _formatBetDescriptor(
+        marketKey: selectedMarket.marketKey,
+        quote: bestQuotes[1],
+      ),
+      bookmakerA: bestQuotes[0].bookmakerTitle,
+      bookmakerB: bestQuotes[1].bookmakerTitle,
+      lineMismatchNote: _lineMismatchNote(
+        marketKey: selectedMarket.marketKey,
+        quoteA: bestQuotes[0],
+        quoteB: bestQuotes[1],
+      ),
+      guaranteedPayout: guaranteedPayout,
+      netProfit: netProfit,
+    ),
   );
 }
 
 class _OpportunityStakeGuidance {
-  const _OpportunityStakeGuidance({this.result, this.errorMessage});
+  const _OpportunityStakeGuidance({this.result, this.errorMessage, this.profitPercent});
 
   final _OpportunityStakeResult? result;
   final String? errorMessage;
+  final Decimal? profitPercent;
 }
 
 class _OpportunityStakeResult {
