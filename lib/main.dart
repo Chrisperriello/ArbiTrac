@@ -8,11 +8,13 @@ import 'core/config/app_config.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
+import 'src/rust/frb_generated.dart';
 import 'theme.dart';
 
 //Async function for updates
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
   await AppConfig.load();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 

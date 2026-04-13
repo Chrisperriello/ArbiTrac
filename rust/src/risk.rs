@@ -77,3 +77,62 @@ pub fn compute_risk(input: RiskInput) -> RiskOutput {
         level,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_low_risk_scenario() {
+        let input = RiskInput {
+            arb_percent: 1.5,
+            total_investment: 100.0,
+            stake_distribution: vec![50.0, 50.0],
+            bets_per_day: 2,
+            books_count: 5,
+            sports_count: 2,
+            market_types: vec![MarketType::Moneyline],
+        };
+        let output = compute_risk(input);
+        assert_eq!(output.score_a, 10.0);
+        assert_eq!(output.score_n, 10.0);
+        assert_eq!(output.score_m, 10.0);
+        assert_eq!(output.global_score, 10.0);
+        assert_eq!(output.level, 1);
+    }
+
+    #[test]
+    fn test_high_risk_scenario() {
+        let input = RiskInput {
+            arb_percent: 7.0,
+            total_investment: 500.0,
+            stake_distribution: vec![250.0, 250.0],
+            bets_per_day: 15,
+            books_count: 2,
+            sports_count: 10,
+            market_types: vec![MarketType::SmallMarketTotalHandicap],
+        };
+        let output = compute_risk(input);
+        assert_eq!(output.score_a, 100.0);
+        assert_eq!(output.score_n, 100.0);
+        assert_eq!(output.score_m, 80.0);
+        assert!(output.global_score > 90.0);
+        assert_eq!(output.level, 10);
+    }
+
+    #[test]
+    fn test_market_weighting() {
+        let input = RiskInput {
+            arb_percent: 2.0,
+            total_investment: 100.0,
+            stake_distribution: vec![50.0, 50.0],
+            bets_per_day: 5,
+            books_count: 3,
+            sports_count: 3,
+            market_types: vec![MarketType::Moneyline, MarketType::SmallMarketTotalHandicap],
+        };
+        // M = (10*1 + 80*4) / (1+4) = 330 / 5 = 66.0
+        let output = compute_risk(input);
+        assert_eq!(output.score_m, 66.0);
+    }
+}

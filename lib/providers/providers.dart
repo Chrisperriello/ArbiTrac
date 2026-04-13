@@ -69,6 +69,33 @@ class StealthSettingsNotifier extends AsyncNotifier<StealthSettings> {
   }
 }
 
+final sessionViewedOpportunityIdsProvider =
+    StateProvider<Set<String>>((ref) => {});
+
+final sessionRiskScoresProvider =
+    StateNotifierProvider<SessionRiskScoresNotifier, List<double>>(
+      (ref) => SessionRiskScoresNotifier(),
+    );
+
+class SessionRiskScoresNotifier extends StateNotifier<List<double>> {
+  SessionRiskScoresNotifier() : super([]);
+
+  void addScore(double score) {
+    state = [...state, score];
+  }
+
+  void clear() {
+    state = [];
+  }
+}
+
+final dailyRiskAverageProvider = Provider<double>((ref) {
+  final scores = ref.watch(sessionRiskScoresProvider);
+  if (scores.isEmpty) return 0.0;
+  final sum = scores.reduce((a, b) => a + b);
+  return sum / scores.length;
+});
+
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
 });

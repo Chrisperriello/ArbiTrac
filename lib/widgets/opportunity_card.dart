@@ -1,12 +1,18 @@
+import 'dart:typed_data';
+
 import 'package:decimal/decimal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../src/rust/api.dart';
+import '../src/rust/risk.dart';
 import 'cyber_animations.dart';
+import 'risk_monitor.dart';
 
-class CyberOpportunityCard extends ConsumerWidget {
+class CyberOpportunityCard extends ConsumerStatefulWidget {
   const CyberOpportunityCard({
     super.key,
     required this.opportunity,
@@ -21,41 +27,135 @@ class CyberOpportunityCard extends ConsumerWidget {
   final Future<void> Function() onFavoritePressed;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CyberOpportunityCard> createState() => _CyberOpportunityCardState();
+}
+
+class _CyberOpportunityCardState extends ConsumerState<CyberOpportunityCard> {
+  MarketType _mapMarketType(String label) {
+    final lower = label.toLowerCase();
+    if (lower.contains('moneyline') || lower.contains('h2h')) {
+      return MarketType.moneyline;
+    }
+    if (lower.contains('spread') ||
+        lower.contains('handicap') ||
+        lower.contains('total')) {
+      return MarketType.mainTotalHandicapSpread;
+    }
+    return MarketType.smallMarketTotalHandicap;
+  }
+
+  Decimal _roundStake(Decimal stake, int increment) {
+    if (increment <= 0) return stake;
+    final value = stake.toDouble();
+    final rounded = (value / increment).round() * increment;
+    return Decimal.parse(rounded.toString());
+  }
+
+  void _reportRiskScore(double score) {
+    final viewedIds = ref.read(sessionViewedOpportunityIdsProvider);
+    if (!viewedIds.contains(widget.opportunity.favoriteId)) {
+      // Add to viewed set
+      ref.read(sessionViewedOpportunityIdsProvider.notifier).update((state) => {
+        ...state,
+        widget.opportunity.favoriteId,
+      });
+      // Add score to average
+      ref.read(sessionRiskScoresProvider.notifier).addScore(score);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final mutedTextColor = theme.textTheme.bodySmall?.color?.withValues(
       alpha: 0.8,
     );
     final opportunitiesAsync = ref.watch(arbOpportunitiesProvider);
+    final stealthAsync = ref.watch(stealthSettingsProvider);
+
     final sameEventOpportunities =
         opportunitiesAsync.asData?.value
-            .where((item) => item.eventId == opportunity.eventId)
+            .where((item) => item.eventId == widget.opportunity.eventId)
             .toList(growable: false) ??
         const <ArbOpportunity>[];
+
     final positiveMarketsByBestProfit = _eventPositiveMarkets(
       sameEventOpportunities,
     );
     final topMarket = positiveMarketsByBestProfit.isEmpty
         ? null
         : positiveMarketsByBestProfit.first;
-    final displayPercent = opportunity.profitMarginPercent;
-    final displayMarketLabel = opportunity.marketLabel;
+
+    final displayPercent = widget.opportunity.profitMarginPercent;
+    final displayMarketLabel = widget.opportunity.marketLabel;
 
     final profitPercent = double.tryParse(displayPercent.toString()) ?? 0;
     final stalenessSeconds = DateTime.now()
-        .difference(opportunity.lastUpdatedAt)
+        .difference(widget.opportunity.lastUpdatedAt)
         .inSeconds;
     final freshnessColor = stalenessSeconds > 45
         ? colorScheme.error
         : stalenessSeconds > 15
         ? colorScheme.tertiary
         : colorScheme.primary;
+
     final borderColor = profitPercent >= 3
         ? colorScheme.primary
         : profitPercent >= 1
         ? colorScheme.secondary
         : colorScheme.outline.withValues(alpha: 0.65);
+
+    // Stealth Mode Calculations
+    final stealthSettings = stealthAsync.asData?.value ?? const StealthSettings();
+    final isStealthActive = stealthSettings.stealthModeEnabled;
+
+    // Use specific investment if set, else fallback to $100
+    final investmentInput = ref.watch(
+      opportunityInvestmentInputProvider(widget.opportunity.favoriteId),
+    );
+    final rawInvestment = double.tryParse(investmentInput) ?? 100.0;
+    final totalInvestment = Decimal.parse(rawInvestment.toString());
+
+    final rawStakes = ArbEngine.individualStakes(
+      decimalOdds: [widget.opportunity.decimalOddsA, widget.opportunity.decimalOddsB],
+      totalInvestment: totalInvestment,
+    );
+
+    final List<Decimal> finalStakes;
+    if (isStealthActive) {
+      finalStakes =
+          rawStakes
+              .map(
+                (s) => _roundStake(s, stealthSettings.roundingIncrement),
+              )
+              .toList(growable: false);
+    } else {
+      finalStakes = rawStakes;
+    }
+
+    // Call Rust Risk Monitor
+    final riskOutput = calculateRisk(
+      input: RiskInput(
+        arbPercent: profitPercent,
+        totalInvestment: rawInvestment,
+        stakeDistribution: Float64List.fromList(
+          finalStakes.map((s) => s.toDouble()).toList(),
+        ),
+        betsPerDay: stealthSettings.betsPerDay,
+        booksCount: stealthSettings.booksCount,
+        sportsCount: stealthSettings.sportsCount,
+        marketTypes: [_mapMarketType(widget.opportunity.marketLabel)],
+      ),
+    );
+
+    // Side effect: Add score to session tracking
+    if (isStealthActive) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _reportRiskScore(riskOutput.globalScore);
+      });
+    }
+
     final card = Container(
       decoration: BoxDecoration(
         color: colorScheme.surface,
@@ -67,29 +167,51 @@ class CyberOpportunityCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  opportunity.eventName,
-                  style: Theme.of(context).textTheme.titleMedium,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.opportunity.eventName,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    Text(
+                      'Books ${widget.opportunity.bookmakerA}/${widget.opportunity.bookmakerB}',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: mutedTextColor),
+                    ),
+                  ],
                 ),
               ),
+              if (isStealthActive)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: RiskMonitor(level: riskOutput.level),
+                ),
               IconButton(
-                onPressed: onFavoritePressed,
+                onPressed: widget.onFavoritePressed,
                 icon: Icon(
-                  isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
-                  color: isFavorite ? colorScheme.primary : null,
+                  widget.isFavorite ? Icons.push_pin : Icons.push_pin_outlined,
+                  color: widget.isFavorite ? colorScheme.primary : null,
                 ),
               ),
             ],
           ),
-          Text(
-            'Books ${opportunity.bookmakerA}/${opportunity.bookmakerB}',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: mutedTextColor),
-          ),
           const SizedBox(height: 6),
+          if (isStealthActive) ...[
+            Text(
+              'Stealth Stakes: \$${finalStakes[0].toStringAsFixed(0)} on ${widget.opportunity.bookmakerA} / '
+              '\$${finalStakes[1].toStringAsFixed(0)} on ${widget.opportunity.bookmakerB}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
           Text(
             topMarket == null
                 ? 'Highest reward market: none'
@@ -125,7 +247,7 @@ class CyberOpportunityCard extends ConsumerWidget {
                 stalenessSeconds: stalenessSeconds,
                 pulseColor: freshnessColor,
                 tooltipMessage: _formatRelativeHoverTime(
-                  opportunity.lastUpdatedAt,
+                  widget.opportunity.lastUpdatedAt,
                 ),
               ),
             ],
@@ -134,7 +256,7 @@ class CyberOpportunityCard extends ConsumerWidget {
       ),
     );
 
-    return InkWell(onTap: onOpenDetails, child: card);
+    return InkWell(onTap: widget.onOpenDetails, child: card);
   }
 }
 

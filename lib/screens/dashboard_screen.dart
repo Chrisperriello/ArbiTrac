@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme/quant_theme.dart';
 import '../models/models.dart';
 import '../providers/providers.dart';
+import '../widgets/daily_risk_health.dart';
 import '../widgets/opportunity_card.dart';
 import 'calculator_screen.dart';
 import 'sports_event_detail_screen.dart';
@@ -115,6 +116,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       label: const Text('Open Manual Arb Calculator'),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  const DailyRiskHealth(),
                   const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerLeft,
