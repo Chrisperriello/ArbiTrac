@@ -9,7 +9,8 @@ class RiskMonitor extends StatefulWidget {
   State<RiskMonitor> createState() => _RiskMonitorState();
 }
 
-class _RiskMonitorState extends State<RiskMonitor> with SingleTickerProviderStateMixin {
+class _RiskMonitorState extends State<RiskMonitor>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _pulseAnimation;
 
@@ -95,7 +96,7 @@ class _RiskMonitorState extends State<RiskMonitor> with SingleTickerProviderStat
                                 color: riskColor.withValues(alpha: 0.3),
                                 blurRadius: 4,
                                 spreadRadius: 1,
-                              )
+                              ),
                             ]
                           : null,
                     ),
@@ -115,6 +116,72 @@ class _RiskMonitorState extends State<RiskMonitor> with SingleTickerProviderStat
           ),
         ),
       ],
+    );
+  }
+}
+
+class NoRiskMonitor extends StatefulWidget {
+  const NoRiskMonitor({super.key});
+
+  @override
+  State<NoRiskMonitor> createState() => _NoRiskMonitorState();
+}
+
+class _NoRiskMonitorState extends State<NoRiskMonitor>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.4,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _pulseAnimation,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.green.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.green.withValues(alpha: 0.5),
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: Text(
+          'NO RISK',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Colors.greenAccent,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
     );
   }
 }

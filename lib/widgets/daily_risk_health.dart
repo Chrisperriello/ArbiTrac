@@ -87,20 +87,20 @@ class DailyRiskHealth extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  'Current session status: $riskLabel',
+                  'Average risk of pinned bets',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.6),
+                  ),
+                ),
+                Text(
+                  'Current status: $riskLabel',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
                   ),
                 ),
               ],
             ),
-          ),
-          IconButton(
-            onPressed: () {
-              ref.read(sessionRiskScoresProvider.notifier).clear();
-            },
-            icon: const Icon(Icons.refresh, size: 20),
-            tooltip: 'Reset session scores',
           ),
         ],
       ),

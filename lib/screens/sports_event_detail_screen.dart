@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -63,18 +62,7 @@ class _SportsEventDetailScreenState
     final rounded = (value / increment).round() * increment;
     return Decimal.parse(rounded.toString());
   }
-
-  void _reportRiskScore(double score) {
-    final viewedIds = ref.read(sessionViewedOpportunityIdsProvider);
-    if (!viewedIds.contains(widget.opportunity.favoriteId)) {
-      ref.read(sessionViewedOpportunityIdsProvider.notifier).update((state) => {
-        ...state,
-        widget.opportunity.favoriteId,
-      });
-      ref.read(sessionRiskScoresProvider.notifier).addScore(score);
-    }
-  }
-
+ 
   @override
   Widget build(BuildContext context) {
     final detailAsync = ref.watch(
@@ -87,7 +75,8 @@ class _SportsEventDetailScreenState
       opportunityInvestmentInputProvider(widget.opportunity.favoriteId),
     );
     final stealthAsync = ref.watch(stealthSettingsProvider);
-    final stealthSettings = stealthAsync.asData?.value ?? const StealthSettings();
+    final stealthSettings =
+        stealthAsync.asData?.value ?? const StealthSettings();
     final isStealthActive = stealthSettings.stealthModeEnabled;
 
     return Scaffold(
@@ -114,8 +103,12 @@ class _SportsEventDetailScreenState
               (market) => market.marketKey == effectiveMarketKey,
               orElse: () => detail.markets.first,
             );
-            final marketReturns = _summarizePositiveMarketReturns(detail.markets);
-            final topMarket = marketReturns.isEmpty ? null : marketReturns.first;
+            final marketReturns = _summarizePositiveMarketReturns(
+              detail.markets,
+            );
+            final topMarket = marketReturns.isEmpty
+                ? null
+                : marketReturns.first;
 
             // --- Stealth/Stake Calculations ---
             final stakeGuidance = _calculateMarketStakeGuidance(
@@ -125,13 +118,18 @@ class _SportsEventDetailScreenState
               roundStakeFn: _roundStake,
             );
 
-            // Calculate Risk Level from Rust if we have valid stakes
+            // Calculate Risk Level from Rust if we have valid stakes and ROI > 0
             RiskOutput? riskOutput;
-            if (isStealthActive && stakeGuidance.result != null) {
+            final currentRoi = stakeGuidance.profitPercent ?? Decimal.zero;
+            final hasPositiveRoi = currentRoi > Decimal.zero;
+
+            if (isStealthActive &&
+                stakeGuidance.result != null &&
+                hasPositiveRoi) {
               final result = stakeGuidance.result!;
               riskOutput = calculateRisk(
                 input: RiskInput(
-                  arbPercent: double.tryParse(stakeGuidance.profitPercent?.toString() ?? '0') ?? 0.0,
+                  arbPercent: double.tryParse(currentRoi.toString()) ?? 0.0,
                   totalInvestment: double.tryParse(investmentInput) ?? 0.0,
                   stakeDistribution: Float64List.fromList([
                     result.stakeA.toDouble(),
@@ -144,12 +142,7 @@ class _SportsEventDetailScreenState
                 ),
               );
 
-              // Side effect: Add score to session tracking
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  _reportRiskScore(riskOutput!.globalScore);
-                }
-              });
+           
             }
 
             return Column(
@@ -164,8 +157,12 @@ class _SportsEventDetailScreenState
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                     ),
-                    if (isStealthActive && riskOutput != null)
-                      RiskMonitor(level: riskOutput.level),
+                    if (isStealthActive)
+                      if (riskOutput != null)
+                        RiskMonitor(level: riskOutput.level)
+                      else if (hasPositiveRoi == false &&
+                          investmentInput.trim().isNotEmpty)
+                        NoRiskMonitor(),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -423,7 +420,9 @@ _OpportunityStakeGuidance _calculateMarketStakeGuidance({
   );
 
   if (stealthSettings.stealthModeEnabled) {
-    stakes = stakes.map((s) => roundStakeFn(s, stealthSettings.roundingIncrement)).toList();
+    stakes = stakes
+        .map((s) => roundStakeFn(s, stealthSettings.roundingIncrement))
+        .toList();
   }
 
   final payoutA = stakes[0] * bestQuotes[0].odds;
@@ -462,7 +461,11 @@ _OpportunityStakeGuidance _calculateMarketStakeGuidance({
 }
 
 class _OpportunityStakeGuidance {
-  const _OpportunityStakeGuidance({this.result, this.errorMessage, this.profitPercent});
+  const _OpportunityStakeGuidance({
+    this.result,
+    this.errorMessage,
+    this.profitPercent,
+  });
 
   final _OpportunityStakeResult? result;
   final String? errorMessage;

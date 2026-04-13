@@ -13,6 +13,8 @@ import '../core/config/app_config.dart';
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../services/services.dart';
+import '../src/rust/api.dart';
+import '../src/rust/risk.dart';
 
 //gets the oddsApi, it gives the apr is scope
 final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
@@ -69,32 +71,69 @@ class StealthSettingsNotifier extends AsyncNotifier<StealthSettings> {
   }
 }
 
-final sessionViewedOpportunityIdsProvider =
-    StateProvider<Set<String>>((ref) => {});
-
-final sessionRiskScoresProvider =
-    StateNotifierProvider<SessionRiskScoresNotifier, List<double>>(
-      (ref) => SessionRiskScoresNotifier(),
-    );
-
-class SessionRiskScoresNotifier extends StateNotifier<List<double>> {
-  SessionRiskScoresNotifier() : super([]);
-
-  void addScore(double score) {
-    state = [...state, score];
-  }
-
-  void clear() {
-    state = [];
-  }
-}
-
 final dailyRiskAverageProvider = Provider<double>((ref) {
-  final scores = ref.watch(sessionRiskScoresProvider);
-  if (scores.isEmpty) return 0.0;
-  final sum = scores.reduce((a, b) => a + b);
-  return sum / scores.length;
+  final favoriteIds = ref.watch(favoriteOpportunityIdsProvider).value ?? {};
+  final allOpportunitiesAsync = ref.watch(allArbOpportunitiesProvider);
+  final stealthAsync = ref.watch(stealthSettingsProvider);
+
+  if (favoriteIds.isEmpty) return 0.0;
+
+  return allOpportunitiesAsync.maybeWhen(
+    data: (opportunities) {
+      final stealthSettings =
+          stealthAsync.asData?.value ?? const StealthSettings();
+      final pinnedOpportunities =
+          opportunities.where((o) => favoriteIds.contains(o.favoriteId));
+
+      if (pinnedOpportunities.isEmpty) return 0.0;
+
+      var totalScore = 0.0;
+      var count = 0;
+
+      for (final opp in pinnedOpportunities) {
+        // Use a standard $100 investment for global health calculation
+        final investment = Decimal.fromInt(100);
+        final stakes = ArbEngine.individualStakes(
+          decimalOdds: [opp.decimalOddsA, opp.decimalOddsB],
+          totalInvestment: investment,
+        );
+
+        final riskOutput = calculateRisk(
+          input: RiskInput(
+            arbPercent: double.tryParse(opp.profitMarginPercent.toString()) ??
+                0.0,
+            totalInvestment: 100.0,
+            stakeDistribution: Float64List.fromList(
+              stakes.map((s) => s.toDouble()).toList(),
+            ),
+            betsPerDay: stealthSettings.betsPerDay,
+            booksCount: stealthSettings.booksCount,
+            sportsCount: stealthSettings.sportsCount,
+            marketTypes: [_mapMarketType(opp.marketLabel)],
+          ),
+        );
+        totalScore += riskOutput.globalScore;
+        count++;
+      }
+
+      return count > 0 ? totalScore / count : 0.0;
+    },
+    orElse: () => 0.0,
+  );
 });
+
+MarketType _mapMarketType(String label) {
+  final lower = label.toLowerCase();
+  if (lower.contains('moneyline') || lower.contains('h2h')) {
+    return MarketType.moneyline;
+  }
+  if (lower.contains('spread') ||
+      lower.contains('handicap') ||
+      lower.contains('total')) {
+    return MarketType.mainTotalHandicapSpread;
+  }
+  return MarketType.smallMarketTotalHandicap;
+}
 
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();

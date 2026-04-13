@@ -50,7 +50,7 @@ class _CyberOpportunityCardState extends ConsumerState<CyberOpportunityCard> {
     final rounded = (value / increment).round() * increment;
     return Decimal.parse(rounded.toString());
   }
-
+  /*
   void _reportRiskScore(double score) {
     final viewedIds = ref.read(sessionViewedOpportunityIdsProvider);
     if (!viewedIds.contains(widget.opportunity.favoriteId)) {
@@ -62,7 +62,9 @@ class _CyberOpportunityCardState extends ConsumerState<CyberOpportunityCard> {
       // Add score to average
       ref.read(sessionRiskScoresProvider.notifier).addScore(score);
     }
-  }
+    }
+    */
+  
 
   @override
   Widget build(BuildContext context) {
@@ -148,13 +150,7 @@ class _CyberOpportunityCardState extends ConsumerState<CyberOpportunityCard> {
         marketTypes: [_mapMarketType(widget.opportunity.marketLabel)],
       ),
     );
-
-    // Side effect: Add score to session tracking
-    if (isStealthActive) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _reportRiskScore(riskOutput.globalScore);
-      });
-    }
+    
 
     final card = Container(
       decoration: BoxDecoration(
