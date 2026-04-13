@@ -308,7 +308,7 @@ This section should be dated and also numbered for prioty (number removed once c
         - Verify the bridge is live with a trivial `pub fn ping() -> String` smoke test before proceeding to any other 5.3 steps.
         - Implemented `rust/` crate scaffolding with `api.rs` FRB entrypoints (`ping`, `compute_risk`), generated bindings under `lib/src/rust/`, and added a Rust unit smoke test asserting `ping() == "pong"`.
 
-    - [ ] __5.3.1: Settings__
+    - [x] __5.3.1: Settings__
         - Add a new **"Anti-Limitation"** tab to the existing `DefaultTabController` in Settings (alongside Favorites and Theme).
         - Implement a master "Stealth Mode" `Switch` tile at the top of the tab.
         - Include a descriptive subtitle: *"Monitors Account Heat using risk scoring to extend your account longevity."*
@@ -326,16 +326,15 @@ This section should be dated and also numbered for prioty (number removed once c
                 - **7–8 Bars (Orange)**: "Moderate to High Risk"
                 - **9–10 Bars (Red)**: "High Risk"
 
-        - [ ] __5.3.1.2: Config__
-            - Create the following input fields, enabled only when Stealth Mode is on:
-                - **Average (arbitrage) bets per day** (integer)
-                - **Number of books being used** (integer)
-                - **Number of sports usually bet** (integer)
-                - **Stake rounding increment** (dropdown: 5 or 10)
-            - **Data Persistence**: These configurations must be saved to both `shared_preferences` and Firebase Firestore (under `users/{uid}/preferences/stealth`).
-            - Implement a "Save" button to commit changes.
-            - Ensure fields auto-populate with the last saved values even if the mode is toggled off and back on.
-
+    - [x] __5.3.1.2: Config__
+        - Create the following input fields, enabled only when Stealth Mode is on:
+            - **Average (arbitrage) bets per day** (integer)
+            - **Number of books being used** (integer)
+            - **Number of sports usually bet** (integer)
+            - **Stake rounding increment** (dropdown: 5 or 10)
+        - **Data Persistence**: These configurations must be saved to both `shared_preferences` and Firebase Firestore (under `users/{uid}/preferences/stealth`).
+        - Implement a "Save" button to commit changes.
+        - Ensure fields auto-populate with the last saved values even if the mode is toggled off and back on.
     - [ ] __5.3.2: Risk Calculation (Rust Crate — `rust/src/risk.rs`)__
         - Implement a standardized risk-scoring system in Rust that translates live data into a **Global Risk Score (G)** from 0 to 100 and a discrete **level** from 1–10.
         - The single public entry point exposed to Dart is `compute_risk(input: RiskInput) -> RiskOutput`. Mark it `#[flutter_rust_bridge::frb(sync)]` since it is pure math with no I/O — this avoids a `FutureProvider` on the Dart side and keeps live updates instantaneous.

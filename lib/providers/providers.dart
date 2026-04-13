@@ -29,6 +29,46 @@ final userProfileServiceProvider = Provider<UserProfileService>((ref) {
   return UserProfileService();
 });
 
+final stealthServiceProvider = Provider<StealthService>((ref) {
+  return StealthService();
+});
+
+final stealthSettingsProvider =
+    AsyncNotifierProvider<StealthSettingsNotifier, StealthSettings>(
+      StealthSettingsNotifier.new,
+    );
+
+class StealthSettingsNotifier extends AsyncNotifier<StealthSettings> {
+  @override
+  Future<StealthSettings> build() async {
+    final service = ref.watch(stealthServiceProvider);
+    final local = await service.loadLocalSettings();
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user == null) {
+      return local;
+    }
+    final remote = await service.loadRemoteSettings(user.uid);
+    // Prefer remote if it's different from default (simple merge/sync logic)
+    if (remote != const StealthSettings()) {
+      if (remote != local) {
+        await service.saveLocalSettings(remote);
+      }
+      return remote;
+    }
+    return local;
+  }
+
+  Future<void> updateSettings(StealthSettings settings) async {
+    state = AsyncData(settings);
+    final service = ref.read(stealthServiceProvider);
+    await service.saveLocalSettings(settings);
+    final user = ref.read(authStateChangesProvider).value;
+    if (user != null) {
+      await service.saveRemoteSettings(user.uid, settings);
+    }
+  }
+}
+
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
 });

@@ -8,7 +8,6 @@ import 'core/config/app_config.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
-import 'services/services.dart';
 import 'theme.dart';
 
 //Async function for updates
