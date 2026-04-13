@@ -61,6 +61,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('Dashboard'),
         actions: [
           IconButton(

@@ -41,4 +41,42 @@ class AppConfig {
     }
     return key;
   }
+
+  static String get googleOAuthWebClientId {
+    return _requiredEnv(
+      'GOOGLE_OAUTH_WEB_CLIENT_ID',
+      hint:
+          'Set your Google OAuth Web Client ID in .env for Windows loopback auth.',
+    );
+  }
+
+  static String get googleOAuthClientSecret {
+    return _requiredEnv(
+      'GOOGLE_OAUTH_CLIENT_SECRET',
+      hint:
+          'Set your Google OAuth Client Secret in .env for Windows loopback auth.',
+    );
+  }
+
+  static int get googleOAuthRedirectPort {
+    final raw = dotenv.env['GOOGLE_OAUTH_REDIRECT_PORT'];
+    if (raw == null || raw.trim().isEmpty) {
+      return 8000;
+    }
+    final parsed = int.tryParse(raw.trim());
+    if (parsed == null || parsed < 1 || parsed > 65535) {
+      throw StateError(
+        'GOOGLE_OAUTH_REDIRECT_PORT must be a valid port number (1-65535).',
+      );
+    }
+    return parsed;
+  }
+
+  static String _requiredEnv(String key, {required String hint}) {
+    final value = dotenv.env[key]?.trim();
+    if (value == null || value.isEmpty || value == 'replace_with_api_key') {
+      throw StateError('$key is missing in .env. $hint');
+    }
+    return value;
+  }
 }

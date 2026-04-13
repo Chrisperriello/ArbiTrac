@@ -40,6 +40,7 @@ class _SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      centerTitle: true,
       toolbarHeight: 84,
       titleSpacing: 20,
       title: Text('Settings', style: Theme.of(context).textTheme.headlineSmall),

@@ -15,7 +15,7 @@ class CalculatorScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Smart Stake Allocation')),
+      appBar: AppBar(title: const Text('Smart Stake Allocation'), centerTitle: true),
       backgroundColor: QuantTheme.background,
       body: Stack(
         children: [
