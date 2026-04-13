@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart'
     show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'core/config/app_config.dart';
+import 'core/platform/rust_external_library.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
@@ -14,7 +15,8 @@ import 'theme.dart';
 //Async function for updates
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await RustLib.init();
+  final rustExternalLibrary = resolveRustExternalLibrary();
+  await RustLib.init(externalLibrary: rustExternalLibrary);
   await AppConfig.load();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
