@@ -1,14 +1,14 @@
-# 🎯 BijecBet | Real-Time Arbitrage Intelligence
+# 🎯 Arbitrac | Real-Time Arbitrage Intelligence
 
 <p align="center">
-  <img src="assets/icon.png" alt="BijecBet logo" width="120" />
+  <img src="assets/icon.png" alt="Arbitrac logo" width="120" />
 </p>
 
 <p align="center">
-  <img src="https://bijecbet.app/brand/banner.webp" alt="BijecBet banner" width="100%" />
+  <img src="https://Arbitrac.app/brand/banner.webp" alt="Arbitrac banner" width="100%" />
 </p>
 
-**BijecBet** is a high-precision, real-time analytics engine built to surface data-driven arbitrage opportunities across sportsbooks and exchanges.
+**Arbitrac** is a high-precision, real-time analytics engine built to surface data-driven arbitrage opportunities across sportsbooks and exchanges.
 
 > **Stop betting. Start arbitraging.**
 
@@ -35,7 +35,7 @@
 
 ## 🧠 The "Math Behind the Magic"
 
-BijecBet doesn't just "guess." It uses a rigorous mathematical approach:
+Arbitrac doesn't just "guess." It uses a rigorous mathematical approach:
 
 1.  **Implied Probability Check:** For any set of outcomes, the system calculates $P = \sum \frac{1}{Decimal Odds_i}$.
 2.  **Detection:** If $P < 1$, an arbitrage opportunity exists.
@@ -107,7 +107,7 @@ ODDS_API_KEY=YOUR_ODDS_API_KEY dart run tool/sync_odds_api_key.dart
 ---
 
 ## ⚖️ Legal & Risk
-BijecBet is an analytics and tracking tool. Users are responsible for ensuring compliance with local gambling laws and sportsbook Terms of Service. Arbitrage betting involves execution risk (lines moving before both bets are placed); BijecBet provides the data, but the user manages the execution.
+Arbitrac is an analytics and tracking tool. Users are responsible for ensuring compliance with local gambling laws and sportsbook Terms of Service. Arbitrage betting involves execution risk (lines moving before both bets are placed); Arbitrac provides the data, but the user manages the execution.
 
 ---
 *Developed by CJ Perriello*

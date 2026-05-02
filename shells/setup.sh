@@ -6,3 +6,4 @@ flutter_rust_bridge_codegen generate #--rust-root rust --rust-input crate::api -
 flutter run -d chrome --web-header=Cross-Origin-Opener-Policy=same-origin --web-header=Cross-Origin-Embedder-Policy=require-corp -v
 
 #rustup component add rust-src --toolchain nightly-aarch64-apple-darwin
+#flutter_rust_bridge_codegen build-web --release
