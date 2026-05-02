@@ -13,11 +13,14 @@ import '../core/config/app_config.dart';
 import '../core/utils/arb_engine.dart';
 import '../models/models.dart';
 import '../services/services.dart';
+import '../src/rust/api.dart';
+import '../src/rust/risk.dart';
 
 //gets the oddsApi, it gives the apr is scope
 final oddsApiServiceProvider = Provider<OddsApiService>((ref) {
   final oddsApiKey = ref.watch(oddsApiKeyProvider).asData?.value;
-  return OddsApiService(apiKeyOverride: oddsApiKey);
+  final user = ref.watch(authStateChangesProvider).asData?.value;
+  return OddsApiService(apiKeyOverride: oddsApiKey, uid: user?.uid);
 });
 
 final authServiceProvider = Provider<AuthService>((ref) {
@@ -27,6 +30,110 @@ final authServiceProvider = Provider<AuthService>((ref) {
 final userProfileServiceProvider = Provider<UserProfileService>((ref) {
   return UserProfileService();
 });
+
+final stealthServiceProvider = Provider<StealthService>((ref) {
+  return StealthService();
+});
+
+final stealthSettingsProvider =
+    AsyncNotifierProvider<StealthSettingsNotifier, StealthSettings>(
+      StealthSettingsNotifier.new,
+    );
+
+class StealthSettingsNotifier extends AsyncNotifier<StealthSettings> {
+  @override
+  Future<StealthSettings> build() async {
+    final service = ref.watch(stealthServiceProvider);
+    final local = await service.loadLocalSettings();
+    final user = ref.watch(authStateChangesProvider).value;
+    if (user == null) {
+      return local;
+    }
+    final remote = await service.loadRemoteSettings(user.uid);
+    // Prefer remote if it's different from default (simple merge/sync logic)
+    if (remote != const StealthSettings()) {
+      if (remote != local) {
+        await service.saveLocalSettings(remote);
+      }
+      return remote;
+    }
+    return local;
+  }
+
+  Future<void> updateSettings(StealthSettings settings) async {
+    state = AsyncData(settings);
+    final service = ref.read(stealthServiceProvider);
+    await service.saveLocalSettings(settings);
+    final user = ref.read(authStateChangesProvider).value;
+    if (user != null) {
+      await service.saveRemoteSettings(user.uid, settings);
+    }
+  }
+}
+
+final dailyRiskAverageProvider = Provider<double>((ref) {
+  final favoriteIds = ref.watch(favoriteOpportunityIdsProvider).value ?? {};
+  final allOpportunitiesAsync = ref.watch(allArbOpportunitiesProvider);
+  final stealthAsync = ref.watch(stealthSettingsProvider);
+
+  if (favoriteIds.isEmpty) return 0.0;
+
+  return allOpportunitiesAsync.maybeWhen(
+    data: (opportunities) {
+      final stealthSettings =
+          stealthAsync.asData?.value ?? const StealthSettings();
+      final pinnedOpportunities =
+          opportunities.where((o) => favoriteIds.contains(o.favoriteId));
+
+      if (pinnedOpportunities.isEmpty) return 0.0;
+
+      var totalScore = 0.0;
+      var count = 0;
+
+      for (final opp in pinnedOpportunities) {
+        // Use a standard $100 investment for global health calculation
+        final investment = Decimal.fromInt(100);
+        final stakes = ArbEngine.individualStakes(
+          decimalOdds: [opp.decimalOddsA, opp.decimalOddsB],
+          totalInvestment: investment,
+        );
+
+        final riskOutput = calculateRisk(
+          input: RiskInput(
+            arbPercent: double.tryParse(opp.profitMarginPercent.toString()) ??
+                0.0,
+            totalInvestment: 100.0,
+            stakeDistribution: Float64List.fromList(
+              stakes.map((s) => s.toDouble()).toList(),
+            ),
+            betsPerDay: stealthSettings.betsPerDay,
+            booksCount: stealthSettings.booksCount,
+            sportsCount: stealthSettings.sportsCount,
+            marketTypes: [_mapMarketType(opp.marketLabel)],
+          ),
+        );
+        totalScore += riskOutput.globalScore;
+        count++;
+      }
+
+      return count > 0 ? totalScore / count : 0.0;
+    },
+    orElse: () => 0.0,
+  );
+});
+
+MarketType _mapMarketType(String label) {
+  final lower = label.toLowerCase();
+  if (lower.contains('moneyline') || lower.contains('h2h')) {
+    return MarketType.moneyline;
+  }
+  if (lower.contains('spread') ||
+      lower.contains('handicap') ||
+      lower.contains('total')) {
+    return MarketType.mainTotalHandicapSpread;
+  }
+  return MarketType.smallMarketTotalHandicap;
+}
 
 final watchlistServiceProvider = Provider<WatchlistService>((ref) {
   return WatchlistService();
@@ -43,8 +150,16 @@ final oddsApiKeyProvider = AsyncNotifierProvider<OddsApiKeyNotifier, String?>(
 class OddsApiKeyNotifier extends AsyncNotifier<String?> {
   @override
   Future<String?> build() async {
+    final authState = ref.watch(authStateChangesProvider);
+    final user = authState.asData?.value;
+
+    if (user == null) {
+      AppConfig.clearRuntimeOddsApiKey();
+      return null;
+    }
+
     final secureStorage = ref.watch(secureStorageServiceProvider);
-    final storedKey = await secureStorage.readOddsApiKey();
+    final storedKey = await secureStorage.readOddsApiKey(uid: user.uid);
     if (storedKey == null || !AppConfig.isValidOddsApiKeyFormat(storedKey)) {
       return null;
     }
@@ -62,8 +177,14 @@ class OddsApiKeyNotifier extends AsyncNotifier<String?> {
         'Odds API key must be a 32-character alphanumeric string.',
       );
     }
+
+    final user = ref.read(authStateChangesProvider).asData?.value;
+    if (user == null) {
+      throw StateError('Cannot save API key when not logged in.');
+    }
+
     final secureStorage = ref.read(secureStorageServiceProvider);
-    await secureStorage.saveOddsApiKey(normalized);
+    await secureStorage.saveOddsApiKey(normalized, uid: user.uid);
     AppConfig.setRuntimeOddsApiKey(normalized);
     state = AsyncData(normalized);
   }
@@ -576,8 +697,6 @@ List<ArbOpportunity> _extractArbOpportunities(
   List<Map<String, dynamic>> events,
 ) {
   final opportunities = <ArbOpportunity>[];
-  final one = Decimal.fromInt(1);
-  final hundred = Decimal.fromInt(100);
   final supportedMarkets = <String>{'h2h', 'spreads', 'totals', 'outrights'};
 
   //Loop through the events
@@ -661,8 +780,8 @@ List<ArbOpportunity> _extractArbOpportunities(
       if (!ArbEngine.isArbitrageOpportunity(decimalOdds)) {
         continue;
       }
-      //profit margin
-      final profitMarginPercent = (one - arbSum) * hundred;
+      // ROI %
+      final profitMarginPercent = ArbEngine.calculateRoi(arbSum);
       //update time
       final freshestUpdate =
           firstQuote.lastUpdatedAt.isAfter(secondQuote.lastUpdatedAt)

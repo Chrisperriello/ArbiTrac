@@ -83,6 +83,7 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Select Username'),
+        centerTitle: true,
         automaticallyImplyLeading: false, // User must set username to proceed
       ),
       body: SafeArea(
@@ -104,7 +105,7 @@ class _UsernameScreenState extends ConsumerState<UsernameScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Please choose a username to represent you in ArbiTrac.',
+                      'Please choose a username to represent you in Arbitrac.',
                       style: Theme.of(context).textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),

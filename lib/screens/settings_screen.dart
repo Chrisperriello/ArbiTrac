@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/config/app_config.dart';
+import '../models/models.dart';
 import '../providers/providers.dart';
 import '../services/services.dart';
 import '../theme.dart';
@@ -16,13 +17,14 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return const DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: _SettingsAppBar(),
         body: TabBarView(
           children: [
             _FavoritesSettingsTab(),
             _ThemeSettingsTab(),
+            _StealthSettingsTab(),
             _ApiKeysSettingsTab(),
           ],
         ),
@@ -40,6 +42,7 @@ class _SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      centerTitle: true,
       toolbarHeight: 84,
       titleSpacing: 20,
       title: Text('Settings', style: Theme.of(context).textTheme.headlineSmall),
@@ -47,6 +50,7 @@ class _SettingsAppBar extends StatelessWidget implements PreferredSizeWidget {
         tabs: [
           Tab(text: 'Favorites', icon: Icon(Icons.star_outline)),
           Tab(text: 'Theme', icon: Icon(Icons.palette_outlined)),
+          Tab(text: 'Stealth', icon: Icon(Icons.security_outlined)),
           Tab(text: 'API Keys', icon: Icon(Icons.vpn_key)),
         ],
       ),
@@ -460,6 +464,212 @@ class _ApiKeysSettingsTabState extends ConsumerState<_ApiKeysSettingsTab> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StealthSettingsTab extends ConsumerStatefulWidget {
+  const _StealthSettingsTab();
+
+  @override
+  ConsumerState<_StealthSettingsTab> createState() => _StealthSettingsTabState();
+}
+
+class _StealthSettingsTabState extends ConsumerState<_StealthSettingsTab> {
+  final TextEditingController _betsPerDayController = TextEditingController();
+  final TextEditingController _booksCountController = TextEditingController();
+  final TextEditingController _sportsCountController = TextEditingController();
+  int _roundingIncrement = 5;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _betsPerDayController.dispose();
+    _booksCountController.dispose();
+    _sportsCountController.dispose();
+    super.dispose();
+  }
+
+  void _loadSettings() {
+    // We use ref.read once to initialize controllers if data is already available
+    final settingsAsync = ref.read(stealthSettingsProvider);
+    if (settingsAsync.hasValue) {
+      final settings = settingsAsync.value!;
+      _betsPerDayController.text = settings.betsPerDay.toString();
+      _booksCountController.text = settings.booksCount.toString();
+      _sportsCountController.text = settings.sportsCount.toString();
+      _roundingIncrement = settings.roundingIncrement;
+    }
+  }
+
+  Future<void> _saveSettings() async {
+    if (_isSaving) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+    final betsPerDay = int.tryParse(_betsPerDayController.text) ?? 0;
+    final booksCount = int.tryParse(_booksCountController.text) ?? 0;
+    final sportsCount = int.tryParse(_sportsCountController.text) ?? 0;
+
+    if (betsPerDay <= 0 || booksCount <= 0 || sportsCount <= 0) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('Please enter valid positive integers for all fields.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSaving = true);
+
+    try {
+      final currentSettings =
+          ref.read(stealthSettingsProvider).asData?.value ??
+          const StealthSettings();
+      final nextSettings = currentSettings.copyWith(
+        betsPerDay: betsPerDay,
+        booksCount: booksCount,
+        sportsCount: sportsCount,
+        roundingIncrement: _roundingIncrement,
+      );
+
+      await ref
+          .read(stealthSettingsProvider.notifier)
+          .updateSettings(nextSettings);
+
+      if (mounted) {
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Stealth settings updated successfully.')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        messenger.showSnackBar(
+          SnackBar(content: Text('Failed to save settings: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsAsync = ref.watch(stealthSettingsProvider);
+
+    // If we transition from loading to data, we might want to update controllers
+    // if they were empty. However, initState handles the initial load.
+    // For reactive updates from other devices, a listener might be better,
+    // but for a settings screen, simple initialization is usually enough.
+
+    return settingsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('Error: $err')),
+      data: (settings) {
+        final isEnabled = settings.stealthModeEnabled;
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            SwitchListTile(
+              title: const Text('Stealth Mode'),
+              subtitle: const Text(
+                'Monitors Account Heat using risk scoring to extend your account longevity.',
+              ),
+              value: isEnabled,
+              onChanged: (value) {
+                ref
+                    .read(stealthSettingsProvider.notifier)
+                    .updateSettings(settings.copyWith(stealthModeEnabled: value));
+              },
+            ),
+            const Divider(),
+            Opacity(
+              opacity: isEnabled ? 1.0 : 0.5,
+              child: IgnorePointer(
+                ignoring: !isEnabled,
+                child: Column(
+                  children: [
+                    _NumericSettingField(
+                      controller: _betsPerDayController,
+                      label: 'Average (arbitrage) bets per day',
+                    ),
+                    const SizedBox(height: 16),
+                    _NumericSettingField(
+                      controller: _booksCountController,
+                      label: 'Number of books being used',
+                    ),
+                    const SizedBox(height: 16),
+                    _NumericSettingField(
+                      controller: _sportsCountController,
+                      label: 'Number of sports usually bet',
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<int>(
+                      initialValue: _roundingIncrement,
+                      decoration: const InputDecoration(
+                        labelText: 'Stake rounding increment',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 5, child: Text('5')),
+                        DropdownMenuItem(value: 10, child: Text('10')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _roundingIncrement = value);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed: _isSaving ? null : _saveSettings,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.save_outlined),
+                        label: Text(_isSaving ? 'Saving...' : 'Save Settings'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NumericSettingField extends StatelessWidget {
+  const _NumericSettingField({required this.controller, required this.label});
+
+  final TextEditingController controller;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
     );
   }
 }

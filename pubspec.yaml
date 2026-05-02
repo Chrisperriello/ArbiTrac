@@ -1,4 +1,4 @@
-name: arbitrac
+name: bijec_bet
 description: "Arbitrage Betting Software"
 publish_to: 'none'
 version: 0.5.0
@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.3.1
+  flutter_rust_bridge: ^2.11.1
   shared_preferences: ^2.3.3
   flutter_secure_storage: ^10.0.0
   flutter_dotenv: ^6.0.0
@@ -22,6 +23,8 @@ dependencies:
   http: ^1.2.2
   google_fonts: ^8.0.2
   shimmer: ^3.0.0
+  google_sign_in_all_platforms: ^2.0.2
+  # Removed: msix and flutter_test (moved to dev_dependencies)
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +32,9 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.0
   flutter_native_splash: ^2.4.0
+  msix: ^3.16.0 # Placed here as a build tool
+
+
 
 flutter:
   uses-material-design: true
@@ -40,6 +46,9 @@ flutter_launcher_icons:
   ios: true
   macos:
     generate: true
+  windows:
+    generate: true
+    icon_size: 256
   image_path: "assets/icon.png"
   web:
     generate: true
@@ -49,3 +58,16 @@ flutter_native_splash:
   image: assets/splash.png   # your logo/image (optional)
   android: true
   ios: true
+
+
+msix_config:
+  display_name: BijecBet
+  publisher_display_name: Bijec
+  identity_name: com.bijec.bijecbet
+  publisher: CN=Bijec  # <--- Add this line
+  msix_version: 0.5.0.0
+  logo_path: assets/icon.png
+  # internetClient is for web; runFullTrust is for the app to actually execute
+  capabilities: internetClient, runFullTrust 
+  generate_certificate: true
+  install_certificate: true

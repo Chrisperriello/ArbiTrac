@@ -1,31 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'core/config/app_config.dart';
+import 'core/platform/rust_external_library.dart';
 import 'firebase_options.dart';
 import 'providers/providers.dart';
 import 'screens/screens.dart';
-import 'services/services.dart';
+import 'src/rust/frb_generated.dart';
 import 'theme.dart';
 
 //Async function for updates
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final secureStorage = SecureStorageService();
-  final storedOddsApiKey = await secureStorage.readOddsApiKey();
-  await AppConfig.load(secureStorageOddsApiKey: storedOddsApiKey);
+  final rustExternalLibrary = resolveRustExternalLibrary();
+  await RustLib.init(externalLibrary: rustExternalLibrary);
+  await AppConfig.load();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Initialize Google Sign In for native platforms using google_sign_in package flow.
-  if (!kIsWeb) {
+  if (_supportsNativeGoogleSignIn) {
     final googleClientId = DefaultFirebaseOptions.currentPlatform.iosClientId;
     await GoogleSignIn.instance.initialize(clientId: googleClientId);
   }
 
   runApp(const ProviderScope(child: MainApp()));
 }
+
+bool get _supportsNativeGoogleSignIn =>
+    !kIsWeb &&
+    (defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS ||
+        defaultTargetPlatform == TargetPlatform.macOS);
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
